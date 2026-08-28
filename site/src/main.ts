@@ -307,7 +307,7 @@ function bindPage(): void {
       if (url.origin !== location.origin) return;
       event.preventDefault();
       history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
-      render();
+      render(true);
     });
   });
   document.querySelector('#replay-terminal')?.addEventListener('click', replayTerminal);
@@ -332,7 +332,7 @@ function bindPage(): void {
   }
 }
 
-function render(): void {
+function render(moveFocus = false): void {
   stopTerminal();
   const route = currentRoute();
   const page = routeData[route];
@@ -347,14 +347,22 @@ function render(): void {
   requestAnimationFrame(() => {
     if (hashTarget) hashTarget.scrollIntoView();
     else window.scrollTo(0, 0);
-    document.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: Boolean(hashTarget) });
+    if (moveFocus) {
+      document.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: Boolean(hashTarget) });
+    }
     const status = document.querySelector<HTMLElement>('#route-status');
     if (status) status.textContent = page.title;
   });
 }
 
 processReturnedLicense();
-window.addEventListener('popstate', render);
+document.querySelector<HTMLAnchorElement>('.skip-link')?.addEventListener('click', (event) => {
+  event.preventDefault();
+  const main = document.querySelector<HTMLElement>('#main');
+  main?.focus();
+  main?.scrollIntoView();
+});
+window.addEventListener('popstate', () => render(true));
 window.addEventListener('offline', () => {
   const status = document.querySelector<HTMLElement>('#route-status');
   if (status) status.textContent = 'The site is offline. The installed CLI still runs locally.';

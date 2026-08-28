@@ -112,13 +112,17 @@ test('@claim:actionable-errors invalid input exits non-zero and names the next s
   expect(result.stderr).toContain('check the CSV header or mapping');
 });
 
-test('pages have one h1, keyboard focus, and no serious accessibility errors', async ({ page }) => {
+test('initial load preserves document-order keyboard focus and has no serious accessibility errors', async ({ page }) => {
   for (const path of ['/', '/demo', '/privacy', '/terms', '/missing-route']) {
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('h1')).toHaveCount(1);
-    await expect(page.locator('h1')).toBeFocused();
+    await expect(page.locator('h1')).not.toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main')).toBeFocused();
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.filter(item => ['critical', 'serious'].includes(item.impact || ''))).toEqual([]);
   }
@@ -128,8 +132,10 @@ test('navigation, back button, reset, and terminal recording work', async ({ pag
   await page.goto('/');
   await page.getByRole('link', { name: 'Try it with sample data' }).click();
   await expect(page).toHaveURL(/\/demo$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   await page.getByRole('button', { name: 'Replay recording' }).click();
   await expect(page.locator('#terminal-output')).toContainText('Replay complete', { timeout: 3_000 });
 });

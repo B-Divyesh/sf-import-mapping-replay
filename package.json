@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "test": "cargo test && playwright test",
+    "test": "cargo test && cargo build --bin import-mapping-replay && playwright test",
     "build:site": "vite build",
     "build": "cargo build --release && npm run build:site"
   },
