@@ -1,111 +1,96 @@
-# Independent verification 2 — PASS
+# Independent verification 2 — FAIL
 
-Verified 28 August 2026 against candidate commit
-`cbfbd8e9e30dc50423de8dcff0a096eaf43f5619` and the live URL
+Verified on 28 August 2026 against candidate
+`cbfbd8e9e30dc50423de8dcff0a096eaf43f5619` and
 <https://import-mapping-replay.sociobot.in>.
 
-## Verdict
+## Verdict: FAIL — release blocked
 
-**PASS — ready for release.** The earlier clean-clone test-gate failure is
-fixed in this candidate. No release-blocking defects were found. The deployed
-static site byte-matches the production build from the tested commit.
+The live **Buy the team kit** link is broken. A fresh normal GET and HEAD to
+the required Sociobot URL
+`https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout`
+both returned HTTP 404, no redirect, with:
 
-## Cold first read
+```json
+{"error":"enabled factory product","status":404}
+```
 
-Pass. A cold live visit says **“Replay CSV mappings with proof”**. It says it
-is for implementation engineers preparing customer imports and gives the
-first action, **“Try it with sample data”**, with the immediate outcome: “See a
-finished replay and three caught errors.” One click opens `/demo`, displaying
-the finished sample replay, its three errors, and the persistent “Demo — sample
-data, nothing is saved” banner with Reset demo and Start for real actions.
+The landing page advertises a £24 one-time purchase, but a customer cannot
+enter checkout. Enable/register the `import-mapping-replay` product in
+Sociobot billing, or remove the paid offer, then retest this live URL. This is
+a deployment/billing registration failure; no product code was changed.
 
-## Clean-clone gates and declared claims
+## Required claims and local gates
 
-`npm ci` installed 23 packages with zero reported vulnerabilities. Every exact
-command in `.factory/claims.json` passed from the product demo entry point:
+From the clean candidate checkout, `npm ci` installed 23 packages with zero
+reported vulnerabilities. Every exact command in `.factory/claims.json` passed
+when run individually before the rest of QA:
 
-| Claim | Exact command result |
+| Claim | Result |
 | --- | --- |
-| demo-errors | PASS — `npm test -- --grep @claim:demo-errors` |
-| review-files | PASS — `npm test -- --grep @claim:review-files` |
-| demo-private | PASS — `npm test -- --grep @claim:demo-private` |
-| cli-offline | PASS — `npm test -- --grep @claim:cli-offline` |
-| demo-temp | PASS — `npm test -- --grep @claim:demo-temp` |
-| cli-replay | PASS — `npm test -- --grep @claim:cli-replay` |
-| mapping-v1 | PASS — `npm test -- --grep @claim:mapping-v1` |
-| source-unchanged | PASS — `npm test -- --grep @claim:source-unchanged` |
-| json-output | PASS — `npm test -- --grep @claim:json-output` |
-| actionable-errors | PASS — `npm test -- --grep @claim:actionable-errors` |
-| paid-kit | PASS — `npm test -- --grep @claim:paid-kit` |
-| license-privacy | PASS — `npm test -- --grep @claim:license-privacy` |
+| `demo-errors` | PASS |
+| `review-files` | PASS |
+| `demo-private` | PASS |
+| `cli-offline` | PASS |
+| `demo-temp` | PASS |
+| `cli-replay` | PASS |
+| `mapping-v1` | PASS |
+| `source-unchanged` | PASS |
+| `json-output` | PASS |
+| `actionable-errors` | PASS |
+| `paid-kit` | PASS (recorded response only; it does not prove live checkout) |
+| `license-privacy` | PASS |
 
-The full `npm test` gate also passed: three Rust unit tests and 18 Playwright
-tests. `npm run typecheck`, `cargo fmt -- --check`, `cargo clippy --all-targets
--- -D warnings`, and the exact production build `npm run build` all passed.
+`npm test` passed all 3 Rust unit tests and 18 Playwright project tests.
+`npm run typecheck`, `cargo fmt --check`, `cargo clippy --all-targets -- -D
+warnings`, `npm run build`, and `cargo package --allow-dirty` all passed.
 
-## Independent CLI and package exercise
+A fresh temporary consumer installed the packaged 0.1.0 crate with `cargo
+install --path target/package/import-mapping-replay-0.1.0 --root <temp>`.
+Its `--version`, `--help`, and `demo --json` commands worked. A valid replay
+produced all four artifacts with the source hash unchanged; `--sample 0`
+produced zero evidence fields. The invalid sample exited 2 with three errors;
+an unwritable output directory exited 1 with an actionable error.
 
-- `target/release/import-mapping-replay --help` and `--version` work.
-- A valid bundled replay returned JSON `status: valid`, 3 rows and 0 validation
-  errors; output CSV column order and mapped values were correct. It wrote
-  `output.csv`, `evidence.json`, `validation.json`, and
-  `rollback-manifest.json`. SHA-256 before/after confirmed the source CSV did
-  not change.
-- The deliberately invalid bundled sample returned `review_required`, 5 rows,
-  3 validation errors, wrote the same four review files, and exited 2. An empty
-  source returned exit 1 with “check the CSV header or mapping.”
-- `demo --json` created a new `/tmp/import-mapping-replay-demo-*` directory and
-  reported all artifact paths.
-- `cargo package --allow-dirty` passed its package verification. The generated
-  `0.1.0` crate was extracted into a fresh temporary consumer, installed with
-  `cargo install --path ... --root ...`, and its installed binary returned
-  version 0.1.0 and successfully ran `demo --json`.
+## Product and live checks
 
-## Live deployment, security, and browser QA
-
-Production hashes match live for `index.html`, the hashed JS and CSS, Open
-Graph image, replay poster, `robots.txt`, and `sitemap.xml`. The matching core
-hashes are:
-
-- index.html: `8bd373f4bbd6675cb35737f31fbe64e558b85257ee5bb8c68c10778c1ef78176`
-- JS: `4d62468784f24163f5cc5822c7b0d823fb0600d0f808dd573bdd7ff005c7e596`
-- CSS: `b147779a7ce40c3436023206d6d0ce151e1709ca4386d514ebd9233c635f86ef`
-
-Live `/`, `/demo`, `/privacy`, `/terms`, and the 404 route each rendered the
-right title, exactly one h1, one main landmark, and no horizontal overflow.
-Desktop and 390 px mobile visits had no console or page errors. The first Tab
-on a cold page reaches the visible 3 px red Skip to main content focus ring;
-Enter moves focus to `main`. Reduced motion sets transitions and animations to
-0.01 ms. Live Axe scans on all five routes reported zero serious or critical
-violations.
-
-The demo used no cookies, localStorage, or sessionStorage, and all observed
-demo requests were same-origin. The optional license test uses only
-`https://api.sociobot.in/api/v1/products/import-mapping-replay/verify` and
-browser-local storage, as its passing claim test verifies. The live CSP permits
-only self plus that explicit Sociobot connection; headers also include HSTS,
-`nosniff`, strict referrer policy, and a restrictive permissions policy. HTML
-uses short revalidation caching and the hashed JS has one-year immutable
-caching.
-
-Rate-limit check: a concurrent burst of 40 invalid verification GETs returned
-24 HTTP 200 responses before the first HTTP 429 (12 total 429s in the burst).
-Every 429 included `Retry-After: 3`. Concurrent ordering means the observed
-threshold is approximately 25 requests, not a per-request sequence guarantee.
-
-Initial JS is 18,172 bytes raw / 6,002 bytes gzip; CSS is 10,770 / 3,219; the
-mobile poster is 185,892 bytes. All are within the stated budgets. This
-environment has no stable Chrome or installed Lighthouse binary, so I did not
-claim a new Lighthouse score; the independent browser, Axe, layout, metadata,
-and transfer-budget checks above passed.
+- Cold first read passed: the first screen says what the CLI does, names
+  implementation engineers, and gives the one-click **Try it with sample
+  data** action with its result. `/demo` presents the sample, three errors,
+  four review files, and the persistent no-save banner.
+- The local production build byte-matches live `index.html`, JS, CSS, hero,
+  and OG image. Core hashes: HTML
+  `8bd373f4bbd6675cb35737f31fbe64e558b85257ee5bb8c68c10778c1ef78176`, JS
+  `4d62468784f24163f5cc5822c7b0d823fb0600d0f808dd573bdd7ff005c7e596`, CSS
+  `b147779a7ce40c3436023206d6d0ce151e1709ca4386d514ebd9233c635f86ef`.
+- At desktop 1440×900 and mobile 390×844, `/`, `/demo`, `/privacy`, `/terms`,
+  and an unknown route had `lang=en`, exactly one main and h1, no horizontal
+  overflow, no browser errors, and zero Axe serious/critical violations.
+  First Tab reaches the visible 3 px Skip-to-main focus ring; Enter focuses
+  main. Reduced motion sets animation/transition duration to 0.00001s.
+- Demo requests stayed same-origin, with no cookies or localStorage. Source
+  review found no telemetry or CLI network client. The only runtime external
+  request is optional Sociobot license verification, explicitly allowed by CSP.
+- Response policies: CSP, HSTS, nosniff, strict referrer policy, and restrictive
+  permissions policy are live. HTML has 30-second revalidation and hashed
+  assets are one-year immutable. JS is 18,172 bytes raw / 5,994 gzip; CSS is
+  10,770 / 3,215; hero is 185,892 bytes: all within budget.
+- Rate-limit burst: 40 invalid license verification GETs yielded 30 HTTP 200
+  and 10 HTTP 429 responses. Each 429 had `Retry-After: 4`; observed threshold
+  was 30 successful requests in the concurrent burst window.
+- No sign-in, PWA, or product backend exists, so tenant, service-worker,
+  persistence, and backend concurrency checks do not apply. Lighthouse was
+  attempted but the only available Playwright Chromium crashed under its
+  launcher; no Lighthouse score is claimed.
 
 ## Defects by severity
 
-None found.
+### Critical
 
-## Scope notes
+Live paid checkout returns 404, preventing the only advertised purchase flow.
 
-This is a local CLI with a static documentation/demo site, not a PWA or backend
-application. Service-worker update/offline-page reload, backend persistence,
-and sign-in tenant checks therefore do not apply. No product code was changed
-during verification.
+### Non-blocking limitation
+
+No Lighthouse score was obtainable in this container; direct browser,
+accessibility, responsive layout, bundle-budget, headers, and error checks
+passed.

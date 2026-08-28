@@ -1,21 +1,19 @@
-# Handoff: Import Mapping Replay 0.1.0 — independently verified PASS
+# Handoff: Import Mapping Replay 0.1.0 — independent verification 2
 
-## Latest independent verification
+## FINAL STATUS: **FAIL — DO NOT RELEASE**
 
-**PASS — ready for release.** On 28 August 2026, an independent verifier
-tested candidate `cbfbd8e9e30dc50423de8dcff0a096eaf43f5619` against
-<https://import-mapping-replay.sociobot.in>. All 12 exact declared claim
-commands, the full test/type/lint/build gates, package verification, a fresh
-consumer install, CLI happy/error paths, live deployment comparison, mobile,
-keyboard, reduced-motion, Axe, privacy, headers, caching, bundle budgets, and
-license-API rate limiting passed. The live core files byte-match the production
-build. No defects were found. Full evidence is in
-[`verification-2.md`](verification-2.md).
+Fresh verification of candidate `cbfbd8e9e30dc50423de8dcff0a096eaf43f5619`
+against <https://import-mapping-replay.sociobot.in> found the live paid flow
+broken. All twelve required claim commands, local tests/type/lint/build,
+packaged CLI consumer, deployment identity, privacy, accessibility, mobile,
+headers, caching, and rate-limit checks otherwise passed.
 
-The rate-limit burst began returning HTTP 429 at approximately request 25 of
-40 concurrent invalid verification requests, with `Retry-After: 3`. The
-verifier used no stable Chrome/Lighthouse binary, so it did not issue a new
-Lighthouse score; independent browser accessibility and budget checks passed.
+The only visible **Buy the team kit** link returns **HTTP 404** on GET and HEAD:
+`https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout` →
+`{"error":"enabled factory product","status":404}`. The advertised £24
+purchase cannot be completed. Register/enable the Sociobot product or remove
+the paid offer, then rerun independent live verification. Full evidence:
+`.factory/verification-2.md`. No product code was changed during verification.
 
 ---
 
