@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "fields": [
+    {
+      "target": "external_id",
+      "source": "Customer ID",
+      "transforms": [{ "op": "trim" }],
+      "validate": [{ "rule": "required" }, { "rule": "unique" }]
+    },
+    {
+      "target": "email",
+      "source": "Email",
+      "transforms": [{ "op": "trim" }, { "op": "lowercase" }],
+      "validate": [{ "rule": "required" }, { "rule": "email" }]
+    },
+    {
+      "target": "start_date",
+      "source": "Start Date",
+      "transforms": [{ "op": "date", "input": "%m/%d/%Y", "output": "%Y-%m-%d" }],
+      "validate": [{ "rule": "required" }]
+    },
+    {
+      "target": "plan",
+      "source": "Plan",
+      "transforms": [
+        { "op": "trim" },
+        { "op": "replace", "from": "Enterprise Plus", "to": "enterprise" },
+        { "op": "lowercase" }
+      ],
+      "validate": [{ "rule": "one_of", "values": ["starter", "growth", "enterprise"] }]
+    }
+  ]
+}
