@@ -118,6 +118,7 @@ test('initial load preserves document-order keyboard focus and has no serious ac
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('h1')).toHaveCount(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
     await expect(page.locator('h1')).not.toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();

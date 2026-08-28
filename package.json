@@ -6,12 +6,15 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "test": "cargo test && cargo build --bin import-mapping-replay && playwright test",
+    "typecheck": "tsc --noEmit",
     "build:site": "vite build",
     "build": "cargo build --release && npm run build:site"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
     "@playwright/test": "1.58.2",
+    "@types/node": "22.12.0",
+    "playwright-core": "1.58.2",
     "typescript": "5.9.2",
     "vite": "7.3.6"
   }

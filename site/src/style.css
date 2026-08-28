@@ -92,6 +92,7 @@ h3 { font-size: 20px; }
 @keyframes draw-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 .limits-grid, .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+.limits-grid > *, .price-grid > * { min-width: 0; }
 .plain-list { padding-left: 22px; }
 .plain-list li { margin-bottom: 12px; }
 .notice { padding: 18px 20px; border-left: 6px solid var(--signal); color: var(--ink); background: #eadcc2; }
@@ -100,9 +101,9 @@ h3 { font-size: 20px; }
 .price-ticket::before { top: 28%; }
 .price-ticket::after { bottom: 28%; }
 .price { margin: 8px 0; font-family: var(--display); font-size: 52px; letter-spacing: .03em; }
-.license-form { display: grid; gap: 10px; margin-top: 24px; }
+.license-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 24px; }
 .license-form label { font-weight: 800; }
-.license-row { display: flex; gap: 10px; }
+.license-row { display: flex; min-width: 0; gap: 10px; }
 .license-row input { min-width: 0; flex: 1; min-height: 48px; padding: 8px 12px; border: 2px solid var(--ink); background: white; }
 .license-status { min-height: 26px; color: var(--line); }
 .kit-panel { padding-top: 24px; border-top: 2px solid var(--brass); }
