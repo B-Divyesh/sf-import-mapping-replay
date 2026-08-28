@@ -1,0 +1,8 @@
+{
+  "slug": "import-mapping-replay",
+  "title": "Import Mapping Replay",
+  "summary": "Replay customer CSV mappings with field-level evidence and validation.",
+  "artifact_class": "cli",
+  "monetization": "one-time",
+  "success_measure": "Another engineer can reproduce an import from the source CSV and mapping in under 10 minutes."
+}

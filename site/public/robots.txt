@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://import-mapping-replay.sociobot.in/sitemap.xml

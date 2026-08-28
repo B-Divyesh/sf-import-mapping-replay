@@ -1,0 +1,86 @@
+[
+  {
+    "id": "demo-errors",
+    "claim": "The sample replay catches three source errors.",
+    "where": "landing preview and demo",
+    "test": "npm test -- --grep @claim:demo-errors",
+    "sandbox": "fresh browser context at /demo with bundled sample data"
+  },
+  {
+    "id": "review-files",
+    "claim": "A replay writes output.csv, evidence.json, validation.json, and rollback-manifest.json.",
+    "where": "landing preview and README",
+    "test": "npm test -- --grep @claim:review-files",
+    "sandbox": "fresh browser context at /demo with the recorded real CLI output"
+  },
+  {
+    "id": "demo-private",
+    "claim": "Demo sample data is not saved or sent away.",
+    "where": "demo banner and privacy page",
+    "test": "npm test -- --grep @claim:demo-private",
+    "sandbox": "fresh browser context; assert empty localStorage and same-origin requests only"
+  },
+  {
+    "id": "cli-offline",
+    "claim": "The CLI runs without internet or an account.",
+    "where": "landing facts and README",
+    "test": "npm test -- --grep @claim:cli-offline",
+    "sandbox": "bundled CLI demo with network proxy variables pointed at a closed local port"
+  },
+  {
+    "id": "demo-temp",
+    "claim": "The CLI demo copies bundled sample data into a new temporary directory.",
+    "where": "README and demo documentation",
+    "test": "npm test -- --grep @claim:demo-temp",
+    "sandbox": "bundled CLI demo; assert the reported demo directory and output exist"
+  },
+  {
+    "id": "cli-replay",
+    "claim": "The CLI transforms CSV rows and writes deterministic evidence and rollback data.",
+    "where": "landing workflow and README",
+    "test": "npm test -- --grep @claim:cli-replay",
+    "sandbox": "fresh temporary directory with shipped valid customer CSV and mapping"
+  },
+  {
+    "id": "mapping-v1",
+    "claim": "Version 1 mappings apply defaults, trim, case, replacement, date, and validation rules.",
+    "where": "README and landing workflow",
+    "test": "npm test -- --grep @claim:mapping-v1",
+    "sandbox": "shipped customer CSV and version 1 mapping; assert mapped email, date, plan, and evidence"
+  },
+  {
+    "id": "source-unchanged",
+    "claim": "A replay does not change the source CSV.",
+    "where": "landing limits and README",
+    "test": "npm test -- --grep @claim:source-unchanged",
+    "sandbox": "hash the shipped source before and after a CLI replay"
+  },
+  {
+    "id": "json-output",
+    "claim": "The CLI prints machine-readable command results with --json.",
+    "where": "README",
+    "test": "npm test -- --grep @claim:json-output",
+    "sandbox": "run the CLI with --json and parse the status, row count, and validation count"
+  },
+  {
+    "id": "actionable-errors",
+    "claim": "Invalid input exits non-zero and tells the user what to check.",
+    "where": "README",
+    "test": "npm test -- --grep @claim:actionable-errors",
+    "sandbox": "temporary CSV missing the mapped columns; assert exit 1 and next-step message"
+  },
+  {
+    "id": "paid-kit",
+    "claim": "A £24 one-time license provides the team mapping kit.",
+    "where": "landing paid section and README",
+    "test": "npm test -- --grep @claim:paid-kit",
+    "sandbox": "fresh browser context with a recorded valid Sociobot verification response"
+  },
+  {
+    "id": "license-privacy",
+    "claim": "A license is stored in the browser and sent only to the Sociobot verification endpoint.",
+    "where": "privacy page",
+    "test": "npm test -- --grep @claim:license-privacy",
+    "sandbox": "fresh browser context; intercept the verification request and inspect localStorage"
+  }
+]

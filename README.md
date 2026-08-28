@@ -80,11 +80,15 @@ npm run build
 
 `npm run build` compiles the release binary and the Vite site. Static deployment output lands in `dist/site`, with `index.html` at that root. The site demo is available at `/demo` or `/?demo=1` and uses only bundled sample data.
 
+## Deploy
+
+Deploy `dist/site` to a static host with SPA fallbacks enabled. The included Azure Static Web Apps configuration supplies the fallback, security headers, caching types, and custom 404 page. The factory publishes the site at <https://import-mapping-replay.sociobot.in>.
+
 ## Privacy and price
 
 CSV processing runs in the local binary. The CLI has no telemetry and makes no network requests. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
 
-The free CLI runs the complete replay on up to 250 source rows. A one-time £24 license removes that row limit and supports future version 1 updates. Accessibility, validation, evidence, and export are not separate paid features.
+The CLI is free and has no row limit. A one-time £24 license provides mapping recipes and a sign-off checklist.
 
 ## License
 
