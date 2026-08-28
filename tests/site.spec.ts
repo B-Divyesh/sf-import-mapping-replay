@@ -5,6 +5,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+const checkoutUrl = 'https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout';
+
 test('@claim:demo-errors sample replay catches three source errors', async ({ page }) => {
   await page.goto('/demo');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review a finished CSV replay');
@@ -80,6 +82,13 @@ test('@claim:cli-replay @claim:mapping-v1 @claim:source-unchanged @claim:json-ou
 });
 
 test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {
+  for (const method of ['GET', 'HEAD']) {
+    const response = await fetch(checkoutUrl, { method, redirect: 'manual' });
+    expect(response.status, `${method} checkout response`).toBe(303);
+    const location = response.headers.get('location');
+    expect(location, `${method} checkout location`).toBeTruthy();
+    expect(new URL(location!).hostname).toBe('checkout.dodopayments.com');
+  }
   let verifyUrl = '';
   await page.route('https://api.sociobot.in/**', route => {
     verifyUrl = route.request().url();
@@ -87,7 +96,7 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
   });
   await page.goto('/');
   await expect(page.getByText('£24', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Buy the team kit/ })).toHaveAttribute('href', 'https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout');
+  await expect(page.getByRole('link', { name: /Buy the team kit/ })).toHaveAttribute('href', checkoutUrl);
   await page.getByLabel('Have a license? Paste it here').fill('test-license');
   await page.getByRole('button', { name: 'Verify license' }).click();
   await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
