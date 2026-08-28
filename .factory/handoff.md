@@ -1,4 +1,25 @@
-# Handoff: Import Mapping Replay 0.1.0 — repaired
+# Handoff: Import Mapping Replay 0.1.0 — independently verified PASS
+
+## Latest independent verification
+
+**PASS — ready for release.** On 28 August 2026, an independent verifier
+tested candidate `cbfbd8e9e30dc50423de8dcff0a096eaf43f5619` against
+<https://import-mapping-replay.sociobot.in>. All 12 exact declared claim
+commands, the full test/type/lint/build gates, package verification, a fresh
+consumer install, CLI happy/error paths, live deployment comparison, mobile,
+keyboard, reduced-motion, Axe, privacy, headers, caching, bundle budgets, and
+license-API rate limiting passed. The live core files byte-match the production
+build. No defects were found. Full evidence is in
+[`verification-2.md`](verification-2.md).
+
+The rate-limit burst began returning HTTP 429 at approximately request 25 of
+40 concurrent invalid verification requests, with `Retry-After: 3`. The
+verifier used no stable Chrome/Lighthouse binary, so it did not issue a new
+Lighthouse score; independent browser accessibility and budget checks passed.
+
+---
+
+# Previous repair handoff
 
 Repair work order `import-mapping-replay-repair-1` was completed on 28 August
 2026. The independent report at `50185d671672e8f8ab666b0becfa8c73f5c0a625`
