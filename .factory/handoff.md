@@ -1,121 +1,99 @@
-# Handoff: Import Mapping Replay 0.1.0 — independent verification 2
+# Handoff: Import Mapping Replay 0.1.0 — repair 2
 
-## FINAL STATUS: **FAIL — DO NOT RELEASE**
+## Final status: PASS — ready for independent verification
 
-Fresh verification of candidate `cbfbd8e9e30dc50423de8dcff0a096eaf43f5619`
-against <https://import-mapping-replay.sociobot.in> found the live paid flow
-broken. All twelve required claim commands, local tests/type/lint/build,
-packaged CLI consumer, deployment identity, privacy, accessibility, mobile,
-headers, caching, and rate-limit checks otherwise passed.
+Repair work order `import-mapping-replay-repair-2` fixed the sole
+release-blocking finding recorded in `.factory/verification-2.md` for candidate
+`cbfbd8e9e30dc50423de8dcff0a096eaf43f5619`: the advertised £24 team-kit
+checkout returned `404 {"error":"enabled factory product"}`.
 
-The only visible **Buy the team kit** link returns **HTTP 404** on GET and HEAD:
-`https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout` →
-`{"error":"enabled factory product","status":404}`. The advertised £24
-purchase cannot be completed. Register/enable the Sociobot product or remove
-the paid offer, then rerun independent live verification. Full evidence:
-`.factory/verification-2.md`. No product code was changed during verification.
+The factory billing catalog now contains the enabled live product:
 
----
+- slug: `import-mapping-replay`
+- name: `Import Mapping Replay Team Mapping Kit`
+- price: £24 / `GBP` 2400, one-time
+- Dodo product: `pdt_0NmO5rGxNkV3U3dmWE6RZ`
+- return URL: `https://import-mapping-replay.sociobot.in/`
 
-# Previous repair handoff
+At handoff, fresh normal `GET` and `HEAD` requests to
+`https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout` both
+returned HTTP 303 with a `checkout.dodopayments.com` session location. The
+public product catalog reports the same GBP 2400 product and checkout URL.
 
-Repair work order `import-mapping-replay-repair-1` was completed on 28 August
-2026. The independent report at `50185d671672e8f8ab666b0becfa8c73f5c0a625`
-tested candidate `165daaf06a7c3699e60d94af8fbdc1231ec1f1d9`. The repaired code commits are
-`cf1b844` and `459e135` on `main`.
+## Repair and regression coverage
 
-## Repairs
+Commit `687430d` (`test: cover live team kit checkout`) adds exact regression
+coverage in `tests/site.spec.ts`. The `@claim:paid-kit` test makes manual
+redirect GET and HEAD requests to the public Sociobot checkout endpoint and
+asserts HTTP 303 plus a hosted Dodo checkout location. It retains the existing
+recorded license-verification/download test, so the browser-only license flow
+is still covered without charging a card.
 
-- `npm test` now builds `target/debug/import-mapping-replay` before Playwright.
-  This fixes the clean-clone `ENOENT` failure for all seven affected CLI claims.
-- Initial page rendering no longer moves focus to the h1. The first forward Tab
-  reaches **Skip to main content**, and activating it focuses `main`.
-- Client-side link and back/forward navigation still focus the new page h1 and
-  announce the route title.
-- The 390 px landing page no longer overflows at the team-kit form. Grid and
-  form children can shrink to the available width.
-- Playwright Core is pinned to 1.58.2, matching the required browser runner and
-  preventing Axe from resolving an incompatible second version. A strict
-  `npm run typecheck` gate now covers site, test, and build TypeScript.
+## Clean verification
 
-Regression coverage is in `tests/site.spec.ts`. It asserts initial focus order,
-skip-link activation, route-change focus, no page overflow on every route in
-both browser projects, existing Axe checks, and all declared product claims.
+From a cleaned Rust target and fresh `npm ci` installation (23 packages, zero
+reported vulnerabilities), all gates passed:
 
-## Clean-clone verification
+```sh
+npm run typecheck
+npm test
+cargo fmt -- --check
+cargo clippy --all-targets -- -D warnings
+npm run build
+cargo package --allow-dirty
+```
 
-A fresh clone at `459e135` was used, with no pre-existing `target`, `dist`, or
-`node_modules` directories.
+`npm test` passed all 3 Rust unit tests and all 18 Playwright desktop/mobile
+tests. Each of the 12 exact commands declared in `.factory/claims.json` also
+passed individually. The paid-kit claim verifies both hosted-checkout methods
+and the recorded browser license flow in each desktop/mobile project.
 
-- `npm ci --ignore-scripts`: pass; 23 packages installed, 0 vulnerabilities.
-- `npm run typecheck`: pass.
-- `npm test`: pass; 3 Rust unit tests and 18/18 Playwright project tests.
-- Every exact command in `.factory/claims.json`: pass. The passing claim IDs are
-  `demo-errors`, `review-files`, `demo-private`, `cli-offline`, `demo-temp`,
-  `cli-replay`, `mapping-v1`, `source-unchanged`, `json-output`,
-  `actionable-errors`, `paid-kit`, and `license-privacy`.
-- `cargo fmt -- --check`: pass.
-- `cargo clippy --all-targets -- -D warnings`: pass.
-- `npm run build`: pass; release CLI and `dist/site` produced.
-- `cargo package --allow-dirty`: pass; 38 files, 474.5 KiB unpacked and 375.3
-  KiB compressed; Cargo's package verification build passed.
+The packaged crate was installed into a fresh temporary consumer using:
 
-## Package and CLI exercise
+```sh
+cargo install --path target/package/import-mapping-replay-0.1.0 --root <temp>
+```
 
-The generated 0.1.0 crate was extracted into a new temporary consumer and
-installed with `cargo install --path <crate> --root <new-prefix>`. The installed
-binary returned `import-mapping-replay 0.1.0`. Its `demo --json` command returned
-`review_required`, 5 rows, 3 validation errors, a new temporary demo directory,
-and paths to all four review artifacts.
+The installed binary returned version 0.1.0, showed help, completed `demo
+--json` with 5 rows and 3 validation errors, and completed a valid bundled CSV
+replay with `status: valid`, 3 rows, and zero validation errors.
 
-The CLI offline claim ran with HTTP and HTTPS proxies pointed at a closed local
-port. No account or network service was needed. Service-worker update and
-offline-page reload tests do not apply: this remains a single-binary CLI with a
-static documentation site, not a PWA. No artifact or deployment class changed.
+## Deployment and live checks
 
-## Browser, accessibility, privacy, and performance
+`npm run build:site` and
+`/opt/fleet/lib/deploy-static.sh import-mapping-replay dist/site` completed
+against the existing Central US Static Web App. The custom domain is live at
+<https://import-mapping-replay.sociobot.in>.
 
-Local and live checks used desktop Chromium at 1440×900 and mobile Chromium at
-390×844.
-
-- `/`, `/demo`, `/privacy`, `/terms`, and an unknown route have `lang="en"`, one
-  h1, one main landmark, correct route content, no serious or critical Axe
-  findings, and no horizontal overflow.
-- Cold load leaves focus on the document. The first Tab focuses the skip link;
-  Enter focuses `main`. Client navigation and browser history focus the new h1.
-- No console errors or uncaught page errors occurred. Reduced-motion mode sets
-  animation and transition duration to 0.01 ms.
-- The demo made only same-origin requests and left localStorage, sessionStorage,
-  and cookies empty. Recorded license tests confirm that only a pasted license
-  and cached verdict are stored and that verification goes only to the declared
-  Sociobot endpoint.
-- Mobile Lighthouse: performance 99, accessibility 100, best practices 100,
-  SEO 100; LCP 2,114 ms, CLS 0, total blocking time 29 ms.
-- Production assets: JS 18.17 KiB raw / 5.97 KiB gzip; CSS 10.77 KiB raw / 3.20
-  KiB gzip; hero WebP 185,892 bytes. All are within the product budgets.
-
-## Deployment and live identity
-
-The work-order command `npm ci && npm run build:site` produced `dist/site`. It
-was deployed with `/opt/fleet/lib/deploy-static.sh import-mapping-replay
-dist/site` to the existing Central US Azure Static Web App. Deployment
-`d3e32ec8-a2d4-4c9d-b727-f970fb68036e` succeeded, the custom domain was Ready,
-and <https://import-mapping-replay.sociobot.in> returned HTTP 200 over TLS.
-
-The live `index.html`, hashed JS, hashed CSS, and Open Graph image byte-match
-the local production build. Relevant SHA-256 values are:
+The local build byte-matches the live HTML and core built assets. Core
+SHA-256 values:
 
 - `index.html`: `8bd373f4bbd6675cb35737f31fbe64e558b85257ee5bb8c68c10778c1ef78176`
 - `index-86q9PNEf.js`: `4d62468784f24163f5cc5822c7b0d823fb0600d0f808dd573bdd7ff005c7e596`
 - `index-QRq1sAzB.css`: `b147779a7ce40c3436023206d6d0ce151e1709ca4386d514ebd9233c635f86ef`
-- `og-replay.webp`: `10e51eb88670f6d724309e703681f56c8a03c9c93e12a47e6b0e2e29e02a6189`
+- `replay-poster.webp`: `3e534cbab9801eccb9c342452c4cee7d25c48cc4ae64a0d9274e3b82e3307a95`
 
-Live `/`, `/demo`, `/privacy`, `/terms`, the SPA fallback, `robots.txt`, and
-`sitemap.xml` return 200. HTML uses 30-second revalidation; hashed assets use a
-one-year immutable policy. Live responses include the repository CSP,
-`nosniff`, strict referrer policy, HSTS, and restrictive permissions policy.
+The factory `verify-url.sh` check passed on live root: 200 response, title,
+`lang=en`, one h1, one main, all image alt attributes, zero console/page
+errors, and 899 ms load in its direct smoke check.
 
-## Known gaps and next steps
+Live Playwright checks covered `/`, `/demo`, `/privacy`, `/terms`, and an
+unknown route at 1440×900 and 390×844. Every page had one h1/main, no
+horizontal overflow, zero Axe serious/critical findings, and zero browser
+errors. First Tab reached the skip link and Enter focused main. Reduced motion
+resolved to 0.00001 seconds. The demo produced no cookies or storage and made
+only same-origin requests. No service worker or web manifest is shipped, as
+appropriate for this static documentation site and local CLI.
 
-No release-blocking gaps remain. The independent verifier should rerun its
-clean-clone commands against the repaired `main` branch.
+Live headers include CSP, HSTS, `nosniff`, strict referrer policy, and a
+restrictive permissions policy. HTML uses 30-second revalidation; hashed assets
+use a one-year immutable cache. JS is 18,172 bytes raw / 6,002 gzip; CSS is
+10,770 / 3,219 gzip; the hero is 185,892 bytes. All remain within the stated
+budgets.
+
+## Known limitations
+
+There is no PWA, account flow, backend tenant data, or local browser data to
+migrate, so service-worker update, offline-page reload, auth, and concurrency
+checks do not apply. The CLI itself remains offline-first and its declared
+offline claim passed from a closed-proxy sandbox.
