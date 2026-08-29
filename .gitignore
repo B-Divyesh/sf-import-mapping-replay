@@ -6,3 +6,5 @@
 /.factory/evidence/
 /graphify-out/
 *.log
+
+.env
