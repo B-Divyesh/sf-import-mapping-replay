@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const checkoutUrl = 'https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout';
+
+function networkGuard(root: string): { library: string; log: string } {
+  const library = join(root, 'network-guard.so');
+  const log = join(root, 'network.log');
+  execFileSync('cc', ['-shared', '-fPIC', resolve('tests/network_guard.c'), '-o', library]);
+  return { library, log };
+}
 
 test('@claim:demo-errors sample replay catches three source errors', async ({ page }) => {
   await page.goto('/demo');
@@ -45,6 +52,44 @@ test('@claim:cli-offline @claim:demo-temp CLI replays bundled data without a ser
   expect(result.validation_errors).toBe(3);
   expect(result.demo_directory).toContain('import-mapping-replay-demo-');
   expect(readFileSync(result.output_csv, 'utf8')).toContain('maya.rivera@northstar.example');
+});
+
+test('@claim:cli-local-only CLI replay makes no network call', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-network-'));
+  const guard = networkGuard(root);
+  const result = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', resolve('examples/valid-customers.csv'), '--mapping', resolve('examples/mapping.json'), '--out-dir', join(root, 'out'), '--json',
+  ], {
+    encoding: 'utf8',
+    env: { ...process.env, LD_PRELOAD: guard.library, NETWORK_GUARD_LOG: guard.log },
+  });
+  expect(result.status).toBe(0);
+  expect(existsSync(guard.log) ? readFileSync(guard.log, 'utf8') : '').toBe('');
+});
+
+test('@claim:rollback-local-scope rollback manifest writes only inside the chosen output directory', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-boundary-'));
+  const guardRoot = mkdtempSync(join(tmpdir(), 'replay-boundary-network-'));
+  const guard = networkGuard(guardRoot);
+  const source = join(root, 'customers.csv');
+  const mapping = join(root, 'mapping.json');
+  const marker = join(root, 'outside.txt');
+  const output = join(root, 'output');
+  cpSync(resolve('examples/valid-customers.csv'), source);
+  cpSync(resolve('examples/mapping.json'), mapping);
+  writeFileSync(marker, 'unchanged');
+  const beforeSource = readFileSync(source);
+  execFileSync(resolve('target/debug/import-mapping-replay'), ['run', '--source', source, '--mapping', mapping, '--out-dir', output], {
+    env: { ...process.env, LD_PRELOAD: guard.library, NETWORK_GUARD_LOG: guard.log },
+  });
+  expect(readFileSync(source)).toEqual(beforeSource);
+  expect(readFileSync(marker, 'utf8')).toBe('unchanged');
+  expect(readdirSync(root).sort()).toEqual(['customers.csv', 'mapping.json', 'output', 'outside.txt']);
+  expect(readdirSync(output).sort()).toEqual(['evidence.json', 'output.csv', 'rollback-manifest.json', 'validation.json']);
+  const rollback = JSON.parse(readFileSync(join(output, 'rollback-manifest.json'), 'utf8'));
+  expect(rollback.purpose).toContain('local transformation');
+  expect(rollback.warning).toContain('cannot undo records');
+  expect(existsSync(guard.log) ? readFileSync(guard.log, 'utf8') : '').toBe('');
 });
 
 test('@claim:core-no-license the core CLI completes a replay without a license', async () => {
@@ -108,6 +153,8 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
     expect(new URL(location!).hostname).toBe('checkout.dodopayments.com');
   }
   let verifyUrl = '';
+  const requests: string[] = [];
+  page.on('request', request => requests.push(request.url()));
   await page.route('https://api.sociobot.in/**', route => {
     verifyUrl = route.request().url();
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok', expires_at: null }) });
@@ -119,6 +166,7 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
   await page.getByRole('button', { name: 'Verify license' }).click();
   await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
   expect(verifyUrl).toBe('https://api.sociobot.in/api/v1/products/import-mapping-replay/verify?license=test-license');
+  expect(requests.filter(url => new URL(url).origin !== 'http://127.0.0.1:4173')).toEqual([verifyUrl]);
   expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('test-license');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download team kit' }).click();
@@ -128,6 +176,55 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
   const kit = JSON.parse(readFileSync(path!, 'utf8'));
   expect(kit.recipes).toHaveLength(5);
   expect(kit.review).toHaveLength(4);
+});
+
+test('@claim:website-license-storage-only license flow uses only its two documented browser keys', async ({ page }) => {
+  await page.route('https://api.sociobot.in/**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ valid: true, reason: 'ok', expires_at: null }),
+  }));
+  await page.goto('/');
+  await page.getByLabel('Have a license? Paste it here').fill('storage-test-license');
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
+  const storage = await page.evaluate(async () => ({
+    local: Object.keys(localStorage).sort(),
+    session: Object.keys(sessionStorage),
+    cookies: document.cookie,
+    databases: 'databases' in indexedDB ? (await indexedDB.databases()).map(database => database.name) : [],
+    caches: 'caches' in window ? await caches.keys() : [],
+  }));
+  expect(storage).toEqual({
+    local: ['sb_license:import-mapping-replay', 'sb_license_verdict:import-mapping-replay'],
+    session: [],
+    cookies: '',
+    databases: [],
+    caches: [],
+  });
+});
+
+test('@claim:license-cache-day cached license is checked at most once in 24 hours', async ({ page }) => {
+  let verificationCount = 0;
+  await page.route('https://api.sociobot.in/**', route => {
+    verificationCount += 1;
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ valid: true, reason: 'ok', expires_at: null }) });
+  });
+  await page.goto('/');
+  await page.getByLabel('Have a license? Paste it here').fill('cache-test-license');
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
+  expect(verificationCount).toBe(1);
+  await page.reload();
+  await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
+  expect(verificationCount).toBe(1);
+  await page.evaluate(() => {
+    const key = 'sb_license_verdict:import-mapping-replay';
+    const verdict = JSON.parse(localStorage.getItem(key) || '{}');
+    localStorage.setItem(key, JSON.stringify({ ...verdict, checked: Date.now() - 86_400_001 }));
+  });
+  await page.reload();
+  await expect.poll(() => verificationCount).toBe(2);
 });
 
 test('@claim:revoked-license-lock a revoked license locks the team kit', async ({ page }) => {
@@ -166,6 +263,15 @@ test('initial load preserves document-order keyboard focus and has no serious ac
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('h1')).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(await page.evaluate(() => document.documentElement.clientWidth));
+    if ((page.viewportSize()?.width || 0) <= 760) {
+      const undersizedTargets = await page.locator('a, button, input').evaluateAll(elements => elements
+        .map(element => {
+          const box = element.getBoundingClientRect();
+          return { label: (element.textContent || element.getAttribute('aria-label') || element.tagName).trim(), width: box.width, height: box.height };
+        })
+        .filter(target => target.width > 0 && target.height > 0 && (target.width < 44 || target.height < 44)));
+      expect(undersizedTargets).toEqual([]);
+    }
     await expect(page.locator('h1')).not.toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
@@ -176,14 +282,72 @@ test('initial load preserves document-order keyboard focus and has no serious ac
   }
 });
 
-test('navigation, back button, reset, and terminal recording work', async ({ page }) => {
+test('direct demo query is isolated and exposes reset and exit controls', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sb_license:import-mapping-replay', 'real-license-sentinel'));
+  await page.goto('/?demo=1');
+  await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reset demo' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Start for real' })).toBeVisible();
+  await page.getByRole('button', { name: 'Reset demo' }).click();
+  await expect(page.getByRole('heading', { name: 'The replay needs review' })).toBeFocused();
+  expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('real-license-sentinel');
+});
+
+test('all routes set specific metadata and unknown routes return HTTP 404', async ({ page, request }) => {
+  const expected = [
+    ['/', 'Import Mapping Replay — replay CSV imports', 'Replay customer CSV imports into a reviewed output file and error report before upload.', 'https://import-mapping-replay.sociobot.in/'],
+    ['/demo', 'Demo — Import Mapping Replay', 'Review the bundled customer CSV replay, three validation errors, and four output files.', 'https://import-mapping-replay.sociobot.in/demo'],
+    ['/privacy', 'Privacy — Import Mapping Replay', 'Read how the local CLI handles CSV files and how the website stores a team kit license.', 'https://import-mapping-replay.sociobot.in/privacy'],
+    ['/terms', 'Terms — Import Mapping Replay', 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', 'https://import-mapping-replay.sociobot.in/terms'],
+  ];
+  for (const [path, title, description, canonical] of expected) {
+    const response = await request.get(path);
+    expect(response.status()).toBe(200);
+    const responseHtml = await response.text();
+    expect(responseHtml).toContain(`<title>${title}</title>`);
+    expect(responseHtml).toContain(`content="${description}"`);
+    await page.goto(path);
+    await expect(page).toHaveTitle(title);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', description);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', title);
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', description);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', canonical);
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute('content', title);
+    await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute('content', description);
+    await expect(page.locator('footer').getByRole('link', { name: 'Privacy' })).toBeVisible();
+    await expect(page.locator('footer').getByRole('link', { name: 'Terms' })).toBeVisible();
+  }
+  for (const path of ['/404', '/does-not-exist']) {
+    const response = await request.get(path);
+    expect(response.status()).toBe(404);
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found');
+    await expect(page).toHaveTitle('Page not found — Import Mapping Replay');
+  }
+});
+
+test('header keeps Privacy visible and usable', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Try it with sample data' }).click();
+  const privacy = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Privacy' });
+  await expect(privacy).toBeVisible();
+  const box = await privacy.boundingBox();
+  if ((page.viewportSize()?.width || 0) <= 760) expect(box?.height).toBeGreaterThanOrEqual(44);
+  await privacy.click();
+  await expect(page).toHaveURL(/\/privacy$/);
+});
+
+test('navigation restores scroll on Back and terminal recording has a clear action', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight - window.innerHeight - 300));
+  const savedScroll = await page.evaluate(() => window.scrollY);
+  await page.evaluate(() => (document.querySelector<HTMLAnchorElement>('a[href="/demo"]') as HTMLAnchorElement).click());
   await expect(page).toHaveURL(/\/demo$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
-  await page.getByRole('button', { name: 'Replay recording' }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(savedScroll);
+  await page.getByRole('button', { name: 'Show the sample replay again' }).click();
   await expect(page.locator('#terminal-output')).toContainText('Replay complete', { timeout: 3_000 });
 });

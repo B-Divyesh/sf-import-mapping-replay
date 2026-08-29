@@ -28,6 +28,13 @@
     "sandbox": "bundled CLI demo with network proxy variables pointed at a closed local port"
   },
   {
+    "id": "cli-local-only",
+    "claim": "The CLI makes no network calls while replaying a CSV.",
+    "where": "landing workflow, privacy page, and README",
+    "test": "npm test -- --grep @claim:cli-local-only",
+    "sandbox": "fresh temporary replay with an LD_PRELOAD guard that records and rejects connect, send, and DNS calls"
+  },
+  {
     "id": "demo-temp",
     "claim": "The CLI demo copies bundled sample data into a new temporary directory.",
     "where": "README and demo documentation",
@@ -84,6 +91,20 @@
     "sandbox": "fresh browser context; intercept the verification request and inspect localStorage"
   },
   {
+    "id": "website-license-storage-only",
+    "claim": "The website stores only a license and its last verification result.",
+    "where": "privacy page and README",
+    "test": "npm test -- --grep @claim:website-license-storage-only",
+    "sandbox": "fresh browser context after license verification; assert exact localStorage keys and empty cookies, sessionStorage, IndexedDB, and CacheStorage"
+  },
+  {
+    "id": "license-cache-day",
+    "claim": "A cached license result is checked at most once in 24 hours.",
+    "where": "privacy page",
+    "test": "npm test -- --grep @claim:license-cache-day",
+    "sandbox": "recorded verification response; reload within 24 hours, then age the cache beyond 24 hours and reload"
+  },
+  {
     "id": "core-no-license",
     "claim": "The core CLI completes a replay without a license.",
     "where": "landing facts, team kit, README",
@@ -103,5 +124,12 @@
     "where": "landing team kit",
     "test": "npm test -- --grep @claim:revoked-license-lock",
     "sandbox": "fresh browser context; recorded valid then revoked Sociobot verification responses"
+  },
+  {
+    "id": "rollback-local-scope",
+    "claim": "The rollback manifest preserves local source rows and does not change another product.",
+    "where": "landing limits, terms, and README",
+    "test": "npm test -- --grep @claim:rollback-local-scope",
+    "sandbox": "fresh temporary directory; assert the source and outside marker are unchanged and all four writes stay in the chosen output directory"
   }
 ]

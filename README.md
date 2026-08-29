@@ -1,8 +1,8 @@
 # Import Mapping Replay
 
-Replay customer CSV cleanup from one reviewed mapping file. The CLI writes the transformed CSV, field-level evidence, validation results, and the untouched source rows needed to reconstruct the run.
+Replay customer CSV imports from one reviewed mapping file. The CLI writes an output CSV, field evidence, validation results, and original source rows.
 
-It is for implementation engineers who prepare repeatable template uploads. It does not connect to customer systems or undo records already imported elsewhere.
+It is for implementation engineers who prepare repeatable template uploads. It does not connect to a customer system or undo records already imported elsewhere.
 
 ## Try the bundled sample
 
@@ -10,7 +10,7 @@ It is for implementation engineers who prepare repeatable template uploads. It d
 cargo run -- demo
 ```
 
-The command copies a realistic customer CSV and mapping into a new temporary directory, runs the replay, and prints every output path. Nothing is uploaded or saved outside that directory.
+The command copies a realistic customer CSV and mapping into a new temporary directory. It runs the replay and prints every output path.
 
 ## Install
 
@@ -67,7 +67,7 @@ Mappings have a stable integer `version`. Version 1 maps named source columns to
 
 Version 1 transforms are `trim`, `lowercase`, `uppercase`, `replace`, and `date`. Validation rules are `required`, `email`, `one_of`, and `unique`. A field may use `default` when its source cell is empty.
 
-Malformed CSV, missing columns, unknown mapping versions, invalid dates, and unwritable output paths return non-zero exit codes with a direct next step. Validation failures return exit code 2 after the review files are written.
+Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Validation failures return exit code 2 after writing review files.
 
 ## Develop and verify
 
@@ -82,11 +82,11 @@ npm run build
 
 ## Deploy
 
-Deploy `dist/site` to a static host with SPA fallbacks enabled. The included Azure Static Web Apps configuration supplies the fallback, security headers, caching types, and custom 404 page. The factory publishes the site at <https://import-mapping-replay.sociobot.in>.
+Deploy `dist/site` to Azure Static Web Apps. Its configuration rewrites known routes, returns the custom 404 for unknown URLs, and sets security headers. The factory publishes the site at <https://import-mapping-replay.sociobot.in>.
 
 ## Privacy and price
 
-CSV processing runs in the local binary. The CLI has no telemetry and makes no network requests. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
+CSV processing runs in the local binary. The CLI makes no network requests while replaying a CSV. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
 
 The core CLI needs no license. A one-time £24 license provides mapping recipes and a sign-off checklist.
 

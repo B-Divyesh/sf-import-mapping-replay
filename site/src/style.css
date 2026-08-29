@@ -23,15 +23,16 @@ a:hover { color: var(--signal); }
 button, input { font: inherit; }
 button, .button { min-height: 48px; min-width: 48px; }
 :focus-visible { outline: 3px solid var(--signal); outline-offset: 4px; }
+.dark-section :focus-visible, .terminal :focus-visible, .demo-banner :focus-visible { outline-color: #f2c26f; }
 .skip-link { position: fixed; z-index: 20; top: 8px; left: 8px; padding: 10px 16px; background: var(--paper-light); transform: translateY(-160%); }
 .skip-link:focus { transform: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
 .site-header { position: relative; z-index: 4; border-bottom: 2px solid var(--ink); background: var(--paper); }
 .header-inner, .footer-inner { width: min(1180px, calc(100% - 32px)); margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 72px; }
-.wordmark { color: var(--ink); font-family: var(--display); font-size: 21px; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
+.wordmark { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-family: var(--display); font-size: 21px; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }
 .site-nav { display: flex; align-items: center; gap: 24px; }
-.site-nav a { color: var(--ink); font-size: 15px; font-weight: 700; text-decoration: none; border-bottom: 2px solid transparent; }
+.site-nav a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; color: var(--ink); font-size: 15px; font-weight: 700; text-decoration: none; border-bottom: 2px solid transparent; }
 .site-nav a:hover, .site-nav a[aria-current="page"] { border-color: var(--signal); }
 
 main { display: block; }
@@ -101,6 +102,7 @@ h3 { font-size: 20px; }
 .price-ticket::before { top: 28%; }
 .price-ticket::after { bottom: 28%; }
 .price { margin: 8px 0; font-family: var(--display); font-size: 52px; letter-spacing: .03em; }
+.price-ticket small a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
 .license-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 24px; }
 .license-form label { font-weight: 800; }
 .license-row { display: flex; min-width: 0; gap: 10px; }
@@ -109,7 +111,7 @@ h3 { font-size: 20px; }
 .kit-panel { padding-top: 24px; border-top: 2px solid var(--brass); }
 
 .demo-banner { position: sticky; z-index: 5; top: 0; display: flex; align-items: center; justify-content: center; gap: 20px; min-height: 56px; padding: 8px 16px; color: var(--paper-light); background: var(--signal-dark); font-size: 14px; font-weight: 800; }
-.demo-banner button, .demo-banner a { min-height: 40px; padding: 7px 14px; border: 1px solid var(--paper-light); color: var(--paper-light); background: transparent; cursor: pointer; }
+.demo-banner button, .demo-banner a { min-height: 44px; padding: 7px 14px; border: 1px solid var(--paper-light); color: var(--paper-light); background: transparent; cursor: pointer; }
 .demo-banner a { display: inline-flex; align-items: center; text-decoration: none; }
 .page-hero { padding: 72px 0 48px; border-bottom: 3px solid var(--ink); }
 .page-hero h1 { max-width: 13ch; }
@@ -130,14 +132,16 @@ h3 { font-size: 20px; }
 .site-footer { border-top: 3px solid var(--ink); background: #ddcfb4; }
 .footer-inner { min-height: 112px; font-size: 14px; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+.footer-links a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
 
 @media (max-width: 760px) {
-  .site-nav a:nth-child(3) { display: none; }
-  .site-nav { gap: 14px; }
+  .site-nav { gap: 10px; }
+  .site-nav a { font-size: 14px; }
+  .header-inner { gap: 12px; }
   .header-inner { min-height: 64px; }
   .wordmark { max-width: 10ch; line-height: 1.05; }
   .hero-grid { grid-template-columns: 1fr; min-height: auto; padding: 56px 0 76px; }
-  h1 { font-size: clamp(48px, 15vw, 68px); }
+  h1 { max-width: 11ch; font-size: clamp(46px, 13vw, 60px); }
   .hero-action { align-items: flex-start; flex-direction: column; }
   .next-note { max-width: none; }
   .poster-frame { box-shadow: 8px 8px 0 var(--brass); transform: none; }

@@ -3,8 +3,11 @@ const SLUG = 'import-mapping-replay';
 const BILLING = `https://api.sociobot.in/api/v1/products/${SLUG}`;
 const LICENSE_KEY = `sb_license:${SLUG}`;
 const VERDICT_KEY = `sb_license_verdict:${SLUG}`;
+const SITE_ORIGIN = 'https://import-mapping-replay.sociobot.in';
 
 type Route = '/' | '/demo' | '/privacy' | '/terms' | '/404';
+type HistoryPosition = { scrollX: number; scrollY: number };
+type LicenseVerdict = { valid: boolean; checked: number };
 
 const sampleTranscript = `<span class="prompt">$ import-mapping-replay demo</span>
 Replay complete: 5 source rows
@@ -40,7 +43,7 @@ const footer = `
         <a href="/privacy" data-link>Privacy</a>
         <a href="/terms" data-link>Terms</a>
         <a href="https://sociobot.in" rel="external">Built by Param Factory <span class="sr-only">(external site)</span></a>
-        <span>Version 0.1.0 · build 2026.08.28</span>
+        <span>Version 0.1.0 · build 2026.08.29</span>
       </div>
     </div>
   </footer>`;
@@ -49,7 +52,7 @@ const terminal = (controls = true) => `
   <div class="terminal" aria-label="Recorded terminal run with sample data">
     <div class="terminal-bar" aria-hidden="true"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-title">local terminal · sample run</span></div>
     <pre id="terminal-output">${sampleTranscript}</pre>
-    ${controls ? '<div class="terminal-controls"><button id="replay-terminal" type="button">Replay recording</button></div>' : ''}
+    ${controls ? '<div class="terminal-controls"><button id="replay-terminal" type="button">Show the sample replay again</button></div>' : ''}
   </div>
   <div class="artifact-strip" aria-label="Files written by the sample run">
     <div><strong>output.csv</strong><span>Mapped rows</span></div>
@@ -65,8 +68,8 @@ const landing = `
       <div class="hero-grid">
         <div>
           <p class="eyebrow">Local CSV replay</p>
-          <h1 id="page-title" tabindex="-1">Replay CSV mappings with proof</h1>
-          <p class="lede">For implementation engineers who need each customer import reviewed, rerun, and traced.</p>
+          <h1 id="page-title" tabindex="-1">Replay CSV imports before upload</h1>
+          <p class="lede">For implementation engineers who need a reviewed output CSV and error report before each customer upload.</p>
           <div class="hero-action">
             <a class="button" href="/demo" data-link>Try it with sample data</a>
             <span class="next-note">See a finished replay and three caught errors.</span>
@@ -97,7 +100,7 @@ const landing = `
     <section class="section" id="how" aria-labelledby="how-title">
       <div class="section-inner">
         <div class="section-intro">
-          <p class="eyebrow">One route, every time</p>
+          <p class="eyebrow">How the replay works</p>
           <h2 id="how-title">Replay an import in three steps</h2>
         </div>
         <ol class="route-steps">
@@ -118,9 +121,9 @@ const landing = `
 $ import-mapping-replay demo</pre></div>
         </div>
         <div>
-          <h3>This tool stays narrow</h3>
+          <h3>What the CLI does not do</h3>
           <ul class="plain-list">
-            <li>It does not connect to a SaaS account.</li>
+            <li>It does not connect to a customer system.</li>
             <li>It processes a source CSV when you run the command.</li>
             <li>It does not change a source CSV.</li>
             <li>A rollback manifest cannot undo records imported elsewhere.</li>
@@ -141,9 +144,9 @@ $ import-mapping-replay demo</pre></div>
         <div class="price-ticket">
           <h3>Team mapping kit</h3>
           <p class="price">£24</p>
-          <p>One-time purchase. Sociobot and Dodo are the merchant of record.</p>
+          <p>One-time purchase. Checkout opens on Dodo.</p>
           <a class="button" href="https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout">Buy the team kit <span class="sr-only">at hosted checkout</span></a>
-          <p><small>Refunds are handled by the merchant. A revoked license locks the team kit.</small></p>
+          <p><small>A revoked license locks the team kit.</small></p>
           <form id="license-form" class="license-form">
             <label for="license">Have a license? Paste it here</label>
             <div class="license-row"><input id="license" name="license" type="password" autocomplete="off"><button class="button secondary" type="submit">Verify license</button></div>
@@ -192,10 +195,10 @@ const privacy = `
   <main id="main" tabindex="-1" class="content-page">
     <section class="page-hero"><div class="section-inner"><p class="eyebrow">Privacy</p><h1 id="page-title" tabindex="-1">Keep customer CSV files local</h1><p class="lede">The CLI reads and writes files only on your computer.</p></div></section>
     <section class="section"><div class="section-inner prose">
-      <h2>What the CLI handles</h2><p>The CLI reads the source CSV and mapping you name. It writes results to your chosen output directory.</p><p>The CLI has no telemetry and makes no network requests.</p>
+      <h2>What the CLI handles</h2><p>The CLI reads the source CSV and mapping you name. It writes results to your chosen output directory.</p><p>The CLI makes no network requests while replaying a CSV.</p>
       <h2>What the website stores</h2><p>The demo uses bundled sample data and stores nothing. A pasted license is stored in this browser under <code>sb_license:import-mapping-replay</code>.</p><p>The site sends that license only to the Sociobot verification endpoint. The cached result is checked at most once each day.</p>
-      <h2>What billing handles</h2><p>Sociobot and Dodo handle checkout, payment details, refunds, and licenses. This site does not receive card details.</p>
-      <h2>Remove stored data</h2><p>Clear this site’s browser storage to remove the license and cached result.</p><p>Last updated: 28 August 2026.</p>
+      <h2>What checkout handles</h2><p>Checkout opens on Dodo. This website handles the license after checkout.</p>
+      <h2>Remove stored data</h2><p>Clear this site’s browser storage to remove the license and cached result.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;
 
@@ -206,23 +209,23 @@ const terms = `
     <section class="section"><div class="section-inner prose">
       <h2>Local utility</h2><p>Import Mapping Replay transforms files you provide. You remain responsible for the source data, mapping, and final upload.</p>
       <h2>Rollback scope</h2><p>The rollback manifest preserves source rows from one local run. It cannot delete or change records in another product.</p>
-      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. The license covers one buyer and their internal implementation team.</p><p>Sociobot and Dodo are the merchant of record. They handle payment and refund requests.</p>
-      <h2>Software terms</h2><p>The CLI is provided under the MIT License. The software is provided without warranty, as the license explains.</p><p>Last updated: 28 August 2026.</p>
+      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens on Dodo.</p>
+      <h2>Software terms</h2><p>The CLI is provided under the MIT License. The software is provided without warranty, as the license explains.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;
 
 const notFound = `
   ${header('/404')}
   <main id="main" tabindex="-1" class="content-page">
-    <section class="page-hero"><div class="section-inner"><p class="eyebrow">Route not found</p><h1 id="page-title" tabindex="-1">This mapping line ends here</h1><p class="lede">The page address does not match a route.</p><a class="button" href="/" data-link>Return home</a></div></section>
+    <section class="page-hero"><div class="section-inner"><p class="eyebrow">Error 404</p><h1 id="page-title" tabindex="-1">Page not found</h1><p class="lede">The page address does not match a route.</p><a class="button" href="/" data-link>Return home</a></div></section>
   </main>${footer}`;
 
-const routeData: Record<Route, { html: string; title: string; description: string }> = {
-  '/': { html: landing, title: 'Import Mapping Replay — replay CSV mappings', description: 'Replay local CSV mappings with field-level evidence, validation results, and untouched source rows.' },
-  '/demo': { html: demo, title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay and three validation errors.' },
-  '/privacy': { html: privacy, title: 'Privacy — Import Mapping Replay', description: 'How Import Mapping Replay keeps customer CSV files local and handles licenses.' },
-  '/terms': { html: terms, title: 'Terms — Import Mapping Replay', description: 'Terms for the Import Mapping Replay CLI and team mapping kit.' },
-  '/404': { html: notFound, title: 'Page not found — Import Mapping Replay', description: 'The requested Import Mapping Replay page was not found.' },
+const routeData: Record<Route, { html: string; title: string; description: string; canonical: string }> = {
+  '/': { html: landing, title: 'Import Mapping Replay — replay CSV imports', description: 'Replay customer CSV imports into a reviewed output file and error report before upload.', canonical: '/' },
+  '/demo': { html: demo, title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay, three validation errors, and four output files.', canonical: '/demo' },
+  '/privacy': { html: privacy, title: 'Privacy — Import Mapping Replay', description: 'Read how the local CLI handles CSV files and how the website stores a team kit license.', canonical: '/privacy' },
+  '/terms': { html: terms, title: 'Terms — Import Mapping Replay', description: 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', canonical: '/terms' },
+  '/404': { html: notFound, title: 'Page not found — Import Mapping Replay', description: 'The requested Import Mapping Replay page was not found.', canonical: '/404' },
 };
 
 let terminalTimers: number[] = [];
@@ -273,7 +276,12 @@ function setLicenseState(valid: boolean, message: string): void {
 
 async function verifyLicense(token: string, force = false): Promise<void> {
   if (!token) return;
-  const cached = JSON.parse(localStorage.getItem(VERDICT_KEY) || 'null') as { valid: boolean; checked: number } | null;
+  let cached: LicenseVerdict | null = null;
+  try {
+    cached = JSON.parse(localStorage.getItem(VERDICT_KEY) || 'null') as LicenseVerdict | null;
+  } catch {
+    localStorage.removeItem(VERDICT_KEY);
+  }
   const fresh = cached && Date.now() - cached.checked < 86_400_000;
   if (cached?.valid) setLicenseState(true, 'License active. The team kit is ready.');
   if (fresh && !force) return;
@@ -306,7 +314,8 @@ function bindPage(): void {
       const url = new URL(link.href);
       if (url.origin !== location.origin) return;
       event.preventDefault();
-      history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      history.replaceState({ ...history.state, scrollX: window.scrollX, scrollY: window.scrollY }, '');
+      history.pushState({ scrollX: 0, scrollY: 0 }, '', `${url.pathname}${url.search}${url.hash}`);
       render(true);
     });
   });
@@ -332,7 +341,15 @@ function bindPage(): void {
   }
 }
 
-function render(moveFocus = false): void {
+function updateMeta(name: string, content: string): void {
+  document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.setAttribute('content', content);
+}
+
+function updateProperty(property: string, content: string): void {
+  document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`)?.setAttribute('content', content);
+}
+
+function render(moveFocus = false, restorePosition?: HistoryPosition): void {
   stopTerminal();
   const route = currentRoute();
   const page = routeData[route];
@@ -340,15 +357,21 @@ function render(moveFocus = false): void {
   if (!app) return;
   app.innerHTML = page.html;
   document.title = page.title;
-  document.querySelector('meta[name="description"]')?.setAttribute('content', page.description);
-  document.querySelector('link[rel="canonical"]')?.setAttribute('href', `https://import-mapping-replay.sociobot.in${route === '/404' ? '/404' : route}`);
+  updateMeta('description', page.description);
+  updateProperty('og:title', page.title);
+  updateProperty('og:description', page.description);
+  updateProperty('og:url', `${SITE_ORIGIN}${page.canonical}`);
+  updateMeta('twitter:title', page.title);
+  updateMeta('twitter:description', page.description);
+  document.querySelector('link[rel="canonical"]')?.setAttribute('href', `${SITE_ORIGIN}${page.canonical}`);
   bindPage();
   const hashTarget = location.hash ? document.querySelector<HTMLElement>(location.hash) : null;
   requestAnimationFrame(() => {
-    if (hashTarget) hashTarget.scrollIntoView();
+    if (restorePosition) window.scrollTo(restorePosition.scrollX, restorePosition.scrollY);
+    else if (hashTarget) hashTarget.scrollIntoView();
     else window.scrollTo(0, 0);
     if (moveFocus) {
-      document.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: Boolean(hashTarget) });
+      document.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: true });
     }
     const status = document.querySelector<HTMLElement>('#route-status');
     if (status) status.textContent = page.title;
@@ -356,13 +379,23 @@ function render(moveFocus = false): void {
 }
 
 processReturnedLicense();
+history.scrollRestoration = 'manual';
+if (!history.state || typeof history.state.scrollY !== 'number') {
+  history.replaceState({ ...history.state, scrollX: window.scrollX, scrollY: window.scrollY }, '');
+}
 document.querySelector<HTMLAnchorElement>('.skip-link')?.addEventListener('click', (event) => {
   event.preventDefault();
   const main = document.querySelector<HTMLElement>('#main');
   main?.focus();
   main?.scrollIntoView();
 });
-window.addEventListener('popstate', () => render(true));
+window.addEventListener('popstate', (event) => {
+  const state = event.state as Partial<HistoryPosition> | null;
+  const position = typeof state?.scrollY === 'number'
+    ? { scrollX: state.scrollX || 0, scrollY: state.scrollY }
+    : { scrollX: 0, scrollY: 0 };
+  render(true, position);
+});
 window.addEventListener('offline', () => {
   const status = document.querySelector<HTMLElement>('#route-status');
   if (status) status.textContent = 'The site is offline. The installed CLI still runs locally.';

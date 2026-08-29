@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite';
-import { cpSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export default defineConfig({
@@ -9,11 +8,14 @@ export default defineConfig({
     outDir: '../dist/site',
     emptyOutDir: true,
     target: 'es2022',
-  },
-  plugins: [{
-    name: 'copy-404',
-    closeBundle() {
-      cpSync(resolve('dist/site/index.html'), resolve('dist/site/404.html'));
+    rollupOptions: {
+      input: {
+        index: resolve('site/index.html'),
+        demo: resolve('site/demo.html'),
+        privacy: resolve('site/privacy.html'),
+        terms: resolve('site/terms.html'),
+        '404': resolve('site/404.html'),
+      },
     },
-  }],
+  },
 });

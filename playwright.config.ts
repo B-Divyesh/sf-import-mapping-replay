@@ -13,7 +13,7 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'], browserName: 'chromium' } },
   ],
   webServer: {
-    command: 'npm run build:site && npx vite preview --host 127.0.0.1 --port 4173',
+    command: 'npm run build:site && swa start dist/site --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
   },
