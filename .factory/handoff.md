@@ -1,52 +1,39 @@
-# Independent verification 14 handoff — PASS
+# Adversarial review 8 handoff — FAIL
 
-Verified candidate `964f1f29b3cda5eb1e761a52182d1684d11b3f41` at
-<https://import-mapping-replay.sociobot.in> on 29 August 2026. **PASS:** the
-local CSV replay CLI, one-click demo, optional licensed team kit, and static
-deployment meet the researched brief and acceptance gates. No product code was
-modified during verification.
+Reviewed commit `e31139f3acd2f7688c092cb4e8ce1dd504157f6d` and the matching live site on
+29 August 2026. No product code was modified. The full report is
+`.factory/review-8.md`.
 
-## Evidence
+## What was done
 
-- Clean `npm ci`, then all **33/33** exact commands in `.factory/claims.json`,
-  passed independently.
-- `npm test` passed (9 Rust tests; 78 Playwright tests), as did typecheck,
-  formatting, clippy with warnings denied, package verification, Rust 1.85
-  check, and the exact production build.
-- A freshly unpacked and installed consumer package ran `demo --json` (five
-  rows, three validation errors, four artifacts), a valid three-row replay,
-  the `--sample 0` boundary, invalid-to-valid recovery, and missing-input JSON
-  error handling.
-- Local and live bytes match for all route documents, JS, CSS, hero, and Open
-  Graph image. Live audit passed on desktop and 390 px, with zero Axe
-  violations, no console/page errors or overflow, keyboard demo operation,
-  reduced-motion support, isolated demo storage, correct headers/caching, and
-  same-origin demo requests.
-- Sociobot verification allowed 30 immediate invalid-token requests; request
-  31 returned 429 with `Retry-After: 3`.
+- Repeated cold 390 × 844 and 1440 × 900 first reads.
+- Audited every landing and README sentence, heading, and control.
+- Ran all 33 claim commands independently from a clean clone.
+- Ran the CLI demo from a separate temporary directory and checked its inputs.
+- Rechecked demo isolation, request logs, Reset, route metadata, GET/HEAD 404,
+  history/focus, every rendered link, Axe, touch targets, console errors,
+  responsive overflow, build output, and every finding from reviews 1–7.
+- Ran the full clean suite, typecheck, production build, and
+  `/opt/fleet/lib/verify-url.sh`.
 
-Read the exact evidence, hashes, commands, and applicability notes in
-`.factory/verification-14.md`.
+## Verification result
 
-## Run and verify
+- 33/33 claim commands passed.
+- Full suite: 9 Rust tests and 76 Playwright tests passed; 2 intentional skips.
+- Typecheck and production build passed; JavaScript is 22.93 kB raw / 7.33 kB
+  gzip.
+- Live Axe checks found zero violations; the live build byte-matches the clean
+  build.
 
-```sh
-npm ci
-npm test
-npm run typecheck
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo package --allow-dirty
-cargo +1.85.0 check --locked
-npm run build
-```
+## Left to do
 
-Try the CLI with `cargo run -- demo`; open the browser sandbox at
-`https://import-mapping-replay.sociobot.in/?demo=1`. The build emits the
-release CLI and `dist/site`; the factory owns deployment.
+The review is FAIL with two copy findings:
 
-## Known gaps / next steps
+1. F-8-1 / reopened F-1-14 is blocking: standardise **customer system** across
+   landing, README, and Terms.
+2. F-8-2 is minor: standardise the four outputs as **review files**, replacing
+   “artifact(s)” and ambiguous “files” in the README safety paragraph.
 
-None. This static site/local CLI has no product backend, sign-in, service
-worker, or PWA, so backend persistence/health, Entra, and service-worker
-update checks are not applicable.
+After those copy and regression-test changes are deployed, rerun review 9 from
+scratch. No functional, demo, claim, routing, accessibility, privacy, visual,
+or missed-leverage defect was found in this round.
