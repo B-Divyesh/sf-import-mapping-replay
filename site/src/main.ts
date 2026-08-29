@@ -349,6 +349,13 @@ function updateProperty(property: string, content: string): void {
   document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`)?.setAttribute('content', content);
 }
 
+function jumpTo(scrollX: number, scrollY: number): void {
+  const previous = document.documentElement.style.scrollBehavior;
+  document.documentElement.style.scrollBehavior = 'auto';
+  window.scrollTo(scrollX, scrollY);
+  document.documentElement.style.scrollBehavior = previous;
+}
+
 function render(moveFocus = false, restorePosition?: HistoryPosition): void {
   stopTerminal();
   const route = currentRoute();
@@ -367,9 +374,9 @@ function render(moveFocus = false, restorePosition?: HistoryPosition): void {
   bindPage();
   const hashTarget = location.hash ? document.querySelector<HTMLElement>(location.hash) : null;
   requestAnimationFrame(() => {
-    if (restorePosition) window.scrollTo(restorePosition.scrollX, restorePosition.scrollY);
+    if (restorePosition) jumpTo(restorePosition.scrollX, restorePosition.scrollY);
     else if (hashTarget) hashTarget.scrollIntoView();
-    else window.scrollTo(0, 0);
+    else jumpTo(0, 0);
     if (moveFocus) {
       document.querySelector<HTMLElement>('#page-title')?.focus({ preventScroll: true });
     }

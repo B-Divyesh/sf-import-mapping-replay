@@ -339,8 +339,12 @@ test('header keeps Privacy visible and usable', async ({ page }) => {
 
 test('navigation restores scroll on Back and terminal recording has a clear action', async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight - window.innerHeight - 300));
+  await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = 'auto';
+    window.scrollTo(0, document.body.scrollHeight - window.innerHeight - 300);
+  });
   const savedScroll = await page.evaluate(() => window.scrollY);
+  expect(savedScroll).toBeGreaterThan(1_000);
   await page.evaluate(() => (document.querySelector<HTMLAnchorElement>('a[href="/demo"]') as HTMLAnchorElement).click());
   await expect(page).toHaveURL(/\/demo$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
