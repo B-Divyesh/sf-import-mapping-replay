@@ -1,4 +1,4 @@
-# Copy audit — polish round 2
+# Copy audit — repair 4
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -52,7 +52,9 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | Five named mapping recipes for common template fields. | 8 | Pass |
 | A review checklist with upload owner and second-engineer approval fields. | 10 | Pass |
 | Team mapping kit / One-time purchase. | 3 / 2 | Pass |
-| Checkout opens on Dodo. | 4 | Pass |
+| Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
+| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
+| A refund revokes the license automatically. | 7 | Pass |
 | Buy the team kit | 4 | Pass |
 | A revoked license locks the team kit. | 7 | Pass |
 | Have a license? Paste it here / Verify license | 6 / 2 | Pass |
@@ -80,7 +82,19 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 
 ## Other routes
 
-The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. Their longest individual sentence contains 13 words. The longest two-sentence paragraph contains 21 words. The route headings are literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
+The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. No sentence exceeds 22 words.
+
+| New or changed copy | Words | Result |
+| --- | ---: | --- |
+| Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
+| Dodo Payments is the merchant of record and handles payment data. | 11 | Pass |
+| After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot. | 19 | Pass |
+| Dodo Payments handles refunds. | 5 | Pass |
+| A refund revokes the license automatically. | 7 | Pass |
+| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
+| The site stores a returned license, removes it from the address bar, and verifies it with Sociobot. | 17 | Pass |
+
+The route headings remain literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
 
 ## README
 
@@ -105,6 +119,10 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. The
 | A field may use default when its source cell is empty. | 11 | Pass |
 | Missing mapped columns return exit code 1 and say to check the CSV header or mapping. | 16 | Pass |
 | Validation failures return exit code 2 after writing review files. | 10 | Pass |
+| The CLI rejects a source or mapping that resolves to an output artifact. | 12 | Pass |
+| It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. | 17 | Pass |
+| A malformed later row leaves no partial artifact. | 8 | Pass |
+| If a complete replay already exists, a failed rerun leaves all four prior files unchanged. | 15 | Pass |
 | npm run build compiles the release binary and the Vite site. | 11 | Pass |
 | Static deployment output lands in dist/site, with index.html at that root. | 11 | Pass |
 | The site demo is available at /demo or /?demo=1 and uses only bundled sample data. | 15 | Pass |
@@ -116,6 +134,10 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. The
 | The website stores only a pasted license and its last verification result in your browser. | 14 | Pass |
 | The core CLI needs no license. | 6 | Pass |
 | A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields. | 19 | Pass |
+| The buy link opens Dodo Payments checkout through Sociobot. | 9 | Pass |
+| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
+| A refund revokes the license automatically. | 7 | Pass |
+| After checkout, the site stores the returned license in localStorage, removes it from the address bar, and verifies it with Sociobot. | 21 | Pass |
 
 ## Terminology
 

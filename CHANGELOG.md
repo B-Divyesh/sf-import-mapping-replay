@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 repair 4 — 2026-08-29
+
+- Reject source or mapping paths that refer to any generated artifact.
+- Stage every replay artifact before publishing and preserve complete prior results when a run fails.
+- Add exact checkout-return claims and identify Dodo Payments as merchant of record and refund handler.
+
 ## 0.1.0 polish 1 — 2026-08-29
 
 - Restore scroll position when browser history returns to a route.

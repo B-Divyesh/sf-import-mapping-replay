@@ -71,10 +71,17 @@
   },
   {
     "id": "source-unchanged",
-    "claim": "A replay does not change the source CSV.",
+    "claim": "A replay rejects output paths that resolve to the source CSV or mapping and never changes those inputs.",
     "where": "landing limits and README",
     "test": "npm test -- --grep @claim:source-unchanged",
-    "sandbox": "hash the shipped source before and after a CLI replay"
+    "sandbox": "copy the source to output.csv and the mapping to evidence.json in separate selected output directories; assert exit 1, actionable collision errors, unchanged bytes, and no other artifacts"
+  },
+  {
+    "id": "atomic-artifacts",
+    "claim": "A malformed later CSV row publishes no partial artifacts and leaves any previous complete replay unchanged.",
+    "where": "README safety behavior",
+    "test": "npm test -- --grep @claim:atomic-artifacts",
+    "sandbox": "run a CSV with one valid row followed by a short row in a fresh output directory, then repeat over a complete replay; assert no first-run artifacts and byte-identical prior artifacts"
   },
   {
     "id": "json-output",
@@ -96,6 +103,27 @@
     "where": "landing paid section and README",
     "test": "npm test -- --grep @claim:paid-kit",
     "sandbox": "fresh browser context with a recorded valid Sociobot verification response; download and inspect the five recipe records and structured checklist"
+  },
+  {
+    "id": "checkout-redirect",
+    "claim": "Buying the team kit opens Dodo Payments checkout through Sociobot.",
+    "where": "landing paid section, privacy page, terms, and README",
+    "test": "npm test -- --grep @claim:checkout-redirect",
+    "sandbox": "send fresh GET and HEAD requests to the documented Sociobot checkout link; assert HTTP 303 and a checkout.dodopayments.com destination"
+  },
+  {
+    "id": "license-return-storage",
+    "claim": "After checkout, the site stores the returned license in localStorage before verifying it.",
+    "where": "privacy page, terms, and README",
+    "test": "npm test -- --grep @claim:license-return-storage",
+    "sandbox": "open /?license=returned-secret in a fresh browser with a recorded invalid verification response; assert the exact license storage key and verification request"
+  },
+  {
+    "id": "license-url-stripping",
+    "claim": "After checkout, the site removes the license token from the address bar while preserving other URL parts.",
+    "where": "privacy page, terms, and README",
+    "test": "npm test -- --grep @claim:license-url-stripping",
+    "sandbox": "open /?license=returned-secret&ref=checkout#team-kit; assert the visible URL becomes /?ref=checkout#team-kit"
   },
   {
     "id": "license-privacy",

@@ -69,6 +69,8 @@ Version 1 transforms are `trim`, `lowercase`, `uppercase`, `replace`, and `date`
 
 Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Validation failures return exit code 2 after writing review files.
 
+The CLI rejects a source or mapping that resolves to an output artifact. It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. A malformed later row leaves no partial artifact. If a complete replay already exists, a failed rerun leaves all four prior files unchanged.
+
 ## Develop and verify
 
 ```sh
@@ -89,6 +91,8 @@ Deploy `dist/site` to Azure Static Web Apps. Its configuration rewrites known ro
 CSV processing runs in the local binary. The CLI makes no network requests while replaying a CSV. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
 
 The core CLI needs no license. A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields.
+
+The buy link opens Dodo Payments checkout through Sociobot. Dodo Payments is the merchant of record and handles refunds. A refund revokes the license automatically. After checkout, the site stores the returned license in `localStorage`, removes it from the address bar, and verifies it with Sociobot.
 
 ## License
 

@@ -3,8 +3,11 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -145,9 +148,158 @@ fn validate_mapping(mapping: &Mapping) -> Result<()> {
     Ok(())
 }
 
-fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(value)?;
-    fs::write(path, bytes).with_context(|| format!("could not write {}", path.display()))
+const ARTIFACT_NAMES: [&str; 4] = [
+    "output.csv",
+    "evidence.json",
+    "validation.json",
+    "rollback-manifest.json",
+];
+
+static WORKSPACE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+struct Workspace {
+    path: PathBuf,
+}
+
+impl Workspace {
+    fn create(out_dir: &Path, purpose: &str) -> Result<Self> {
+        for _ in 0..100 {
+            let sequence = WORKSPACE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+            let path = out_dir.join(format!(
+                ".import-mapping-replay-{purpose}-{}-{sequence}",
+                process::id()
+            ));
+            match fs::create_dir(&path) {
+                Ok(()) => return Ok(Self { path }),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => {
+                    return Err(error).with_context(|| {
+                        format!(
+                            "could not create staging directory in {}",
+                            out_dir.display()
+                        )
+                    });
+                }
+            }
+        }
+        bail!(
+            "could not create a unique staging directory in {}",
+            out_dir.display()
+        )
+    }
+}
+
+impl Drop for Workspace {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+fn validate_output_paths(source: &Path, mapping_path: &Path, out_dir: &Path) -> Result<()> {
+    fs::create_dir_all(out_dir)
+        .with_context(|| format!("could not create output directory {}", out_dir.display()))?;
+    let canonical_source = fs::canonicalize(source)
+        .with_context(|| format!("could not resolve source CSV {}", source.display()))?;
+    let canonical_mapping = fs::canonicalize(mapping_path)
+        .with_context(|| format!("could not resolve mapping {}", mapping_path.display()))?;
+    let canonical_out_dir = fs::canonicalize(out_dir)
+        .with_context(|| format!("could not resolve output directory {}", out_dir.display()))?;
+
+    for name in ARTIFACT_NAMES {
+        let output = canonical_out_dir.join(name);
+        for (input_name, input) in [
+            ("source CSV", canonical_source.as_path()),
+            ("mapping", canonical_mapping.as_path()),
+        ] {
+            let collides = input == output
+                || (output.exists()
+                    && same_file::is_same_file(input, &output).with_context(|| {
+                        format!(
+                            "could not compare {input_name} {} with output artifact {}",
+                            input.display(),
+                            output.display()
+                        )
+                    })?);
+            if collides {
+                bail!(
+                    "{input_name} {} resolves to output artifact {}; choose another --out-dir",
+                    input.display(),
+                    output.display()
+                );
+            }
+        }
+        if output
+            .symlink_metadata()
+            .is_ok_and(|metadata| metadata.file_type().is_dir())
+        {
+            bail!(
+                "output artifact {} is a directory; move it or choose another --out-dir",
+                output.display()
+            );
+        }
+    }
+    Ok(())
+}
+
+fn write_staged(path: &Path, bytes: &[u8]) -> Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .with_context(|| format!("could not stage {}", path.display()))?;
+    file.write_all(bytes)
+        .with_context(|| format!("could not stage {}", path.display()))?;
+    file.sync_all()
+        .with_context(|| format!("could not finish staging {}", path.display()))
+}
+
+fn restore_backups(out_dir: &Path, backup_dir: &Path, names: &[&str]) -> Result<()> {
+    for name in names.iter().rev() {
+        let target = out_dir.join(name);
+        if target.exists() {
+            fs::remove_file(&target)
+                .with_context(|| format!("could not remove incomplete {}", target.display()))?;
+        }
+        fs::rename(backup_dir.join(name), &target)
+            .with_context(|| format!("could not restore previous {}", target.display()))?;
+    }
+    Ok(())
+}
+
+fn publish_artifacts(out_dir: &Path, artifacts: &[(&str, Vec<u8>)]) -> Result<()> {
+    let stage = Workspace::create(out_dir, "stage")?;
+    for (name, bytes) in artifacts {
+        write_staged(&stage.path.join(name), bytes)?;
+    }
+
+    let backup = Workspace::create(out_dir, "backup")?;
+    let mut backed_up = Vec::new();
+    for (name, _) in artifacts {
+        let target = out_dir.join(name);
+        if target.symlink_metadata().is_ok() {
+            if let Err(error) = fs::rename(&target, backup.path.join(name)) {
+                restore_backups(out_dir, &backup.path, &backed_up)?;
+                return Err(error)
+                    .with_context(|| format!("could not preserve previous {}", target.display()));
+            }
+            backed_up.push(*name);
+        }
+    }
+
+    let mut published = Vec::new();
+    for (name, _) in artifacts {
+        let target = out_dir.join(name);
+        if let Err(error) = fs::rename(stage.path.join(name), &target) {
+            for published_name in published.iter().rev() {
+                let _ = fs::remove_file(out_dir.join(published_name));
+            }
+            restore_backups(out_dir, &backup.path, &backed_up)?;
+            return Err(error)
+                .with_context(|| format!("could not publish staged {}", target.display()));
+        }
+        published.push(*name);
+    }
+    Ok(())
 }
 
 pub fn run_replay(
@@ -168,6 +320,7 @@ pub fn run_replay(
             mapping_path.display()
         )
     })?;
+    validate_output_paths(source, mapping_path, out_dir)?;
     let mapping: Mapping = serde_json::from_slice(&mapping_bytes).with_context(|| {
         format!(
             "mapping {} is not valid version 1 JSON",
@@ -199,15 +352,7 @@ pub fn run_replay(
         }
     }
 
-    fs::create_dir_all(out_dir)
-        .with_context(|| format!("could not create output directory {}", out_dir.display()))?;
-    let output_path = out_dir.join("output.csv");
-    let evidence_path = out_dir.join("evidence.json");
-    let validation_path = out_dir.join("validation.json");
-    let rollback_path = out_dir.join("rollback-manifest.json");
-    let mut writer = csv::WriterBuilder::new()
-        .from_path(&output_path)
-        .with_context(|| format!("could not write output CSV {}", output_path.display()))?;
+    let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
     writer.write_record(mapping.fields.iter().map(|field| field.target.as_str()))?;
 
     let mut source_rows = Vec::new();
@@ -301,6 +446,10 @@ pub fn run_replay(
         output_values.push(out);
     }
     writer.flush()?;
+    let output_bytes = writer
+        .into_inner()
+        .map_err(|error| error.into_error())
+        .context("could not finish output CSV")?;
 
     for (field_index, field) in mapping.fields.iter().enumerate() {
         if field
@@ -332,54 +481,54 @@ pub fn run_replay(
 
     let source_hash = sha256(&source_bytes);
     let mapping_hash = sha256(&mapping_bytes);
-    let output_bytes = fs::read(&output_path)?;
     let output_hash = sha256(&output_bytes);
-    write_json(
-        &evidence_path,
-        &Evidence {
-            schema: "import-mapping-replay/evidence/v1",
-            mapping_version: mapping.version,
-            source_sha256: &source_hash,
-            mapping_sha256: &mapping_hash,
-            output_sha256: &output_hash,
-            source_rows: source_rows.len(),
-            output_rows: output_values.len(),
-            sample_limit,
-            fields: evidence,
-        },
-    )?;
-    write_json(
-        &validation_path,
-        &ValidationFile {
-            schema: "import-mapping-replay/validation/v1",
-            valid: issues.is_empty(),
-            error_count: issues.len(),
-            issues: &issues,
-        },
-    )?;
-    write_json(
-        &rollback_path,
-        &RollbackManifest {
-            schema: "import-mapping-replay/rollback/v1",
-            purpose: "Reconstruct the source rows used by this local transformation.",
-            warning: "This file cannot undo records already imported into another product.",
-            source_file: source
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .into_owned(),
-            source_sha256: &source_hash,
-            mapping_sha256: &mapping_hash,
-            headers: &headers,
-            rows: &source_rows,
-        },
+    let evidence_bytes = serde_json::to_vec_pretty(&Evidence {
+        schema: "import-mapping-replay/evidence/v1",
+        mapping_version: mapping.version,
+        source_sha256: &source_hash,
+        mapping_sha256: &mapping_hash,
+        output_sha256: &output_hash,
+        source_rows: source_rows.len(),
+        output_rows: output_values.len(),
+        sample_limit,
+        fields: evidence,
+    })?;
+    let validation_bytes = serde_json::to_vec_pretty(&ValidationFile {
+        schema: "import-mapping-replay/validation/v1",
+        valid: issues.is_empty(),
+        error_count: issues.len(),
+        issues: &issues,
+    })?;
+    let rollback_bytes = serde_json::to_vec_pretty(&RollbackManifest {
+        schema: "import-mapping-replay/rollback/v1",
+        purpose: "Reconstruct the source rows used by this local transformation.",
+        warning: "This file cannot undo records already imported into another product.",
+        source_file: source
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned(),
+        source_sha256: &source_hash,
+        mapping_sha256: &mapping_hash,
+        headers: &headers,
+        rows: &source_rows,
+    })?;
+
+    publish_artifacts(
+        out_dir,
+        &[
+            (ARTIFACT_NAMES[0], output_bytes),
+            (ARTIFACT_NAMES[1], evidence_bytes),
+            (ARTIFACT_NAMES[2], validation_bytes),
+            (ARTIFACT_NAMES[3], rollback_bytes),
+        ],
     )?;
 
     Ok(RunReport {
-        output_csv: output_path,
-        evidence: evidence_path,
-        validation: validation_path,
-        rollback_manifest: rollback_path,
+        output_csv: out_dir.join(ARTIFACT_NAMES[0]),
+        evidence: out_dir.join(ARTIFACT_NAMES[1]),
+        validation: out_dir.join(ARTIFACT_NAMES[2]),
+        rollback_manifest: out_dir.join(ARTIFACT_NAMES[3]),
         rows: source_rows.len(),
         validation_errors: issues.len(),
     })
@@ -455,5 +604,94 @@ mod tests {
             .to_string();
         assert!(error.contains("missing"));
         assert!(error.contains("check the CSV header or mapping"));
+    }
+
+    #[test]
+    fn source_output_collision_is_rejected_without_changing_source() {
+        let dir = tempdir().unwrap();
+        let source = dir.path().join("output.csv");
+        let mapping = dir.path().join("mapping.json");
+        fs::copy(example("valid-customers.csv"), &source).unwrap();
+        fs::copy(example("mapping.json"), &mapping).unwrap();
+        let before = fs::read(&source).unwrap();
+
+        let error = run_replay(&source, &mapping, dir.path(), 3)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("source CSV"));
+        assert!(error.contains("resolves to output artifact"));
+        assert!(error.contains("choose another --out-dir"));
+        assert_eq!(fs::read(&source).unwrap(), before);
+        assert!(!dir.path().join("evidence.json").exists());
+        assert!(!dir.path().join("validation.json").exists());
+        assert!(!dir.path().join("rollback-manifest.json").exists());
+    }
+
+    #[test]
+    fn mapping_output_collision_is_rejected_without_changing_mapping() {
+        let dir = tempdir().unwrap();
+        let source = dir.path().join("source.csv");
+        let mapping = dir.path().join("evidence.json");
+        fs::copy(example("valid-customers.csv"), &source).unwrap();
+        fs::copy(example("mapping.json"), &mapping).unwrap();
+        let before = fs::read(&mapping).unwrap();
+
+        let error = run_replay(&source, &mapping, dir.path(), 3)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("mapping"));
+        assert!(error.contains("resolves to output artifact"));
+        assert_eq!(fs::read(&mapping).unwrap(), before);
+        assert!(!dir.path().join("output.csv").exists());
+        assert!(!dir.path().join("validation.json").exists());
+        assert!(!dir.path().join("rollback-manifest.json").exists());
+    }
+
+    #[test]
+    fn malformed_later_row_publishes_no_artifacts() {
+        let dir = tempdir().unwrap();
+        let source = dir.path().join("source.csv");
+        fs::write(
+            &source,
+            "Customer ID,Email,Start Date,Plan\nC-1001,good@example.com,04/18/2025,Starter\nC-1002,short@example.com\n",
+        )
+        .unwrap();
+        let output = dir.path().join("results");
+
+        let error = run_replay(&source, &example("mapping.json"), &output, 3)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("source CSV row 3 is malformed"));
+        for name in ARTIFACT_NAMES {
+            assert!(!output.join(name).exists(), "{name} must not be published");
+        }
+    }
+
+    #[test]
+    fn malformed_rerun_preserves_previous_complete_replay() {
+        let dir = tempdir().unwrap();
+        let output = dir.path().join("results");
+        run_replay(
+            &example("valid-customers.csv"),
+            &example("mapping.json"),
+            &output,
+            3,
+        )
+        .unwrap();
+        let before = ARTIFACT_NAMES.map(|name| (name, fs::read(output.join(name)).unwrap()));
+        let malformed = dir.path().join("malformed.csv");
+        fs::write(
+            &malformed,
+            "Customer ID,Email,Start Date,Plan\nC-1001,good@example.com,04/18/2025,Starter\nC-1002,short@example.com\n",
+        )
+        .unwrap();
+
+        assert!(run_replay(&malformed, &example("mapping.json"), &output, 3).is_err());
+        for (name, expected) in before {
+            assert_eq!(fs::read(output.join(name)).unwrap(), expected);
+        }
     }
 }

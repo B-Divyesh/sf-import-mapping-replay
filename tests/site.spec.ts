@@ -153,7 +153,7 @@ test('@claim:rust-msrv package metadata declares Rust 1.85 as the minimum compil
   expect(packageMetadata?.rust_version).toBe('1.85');
 });
 
-test('@claim:cli-replay @claim:mapping-v1 @claim:source-unchanged @claim:json-output CLI writes deterministic transformed output and manifests', async () => {
+test('@claim:cli-replay @claim:mapping-v1 @claim:json-output CLI writes deterministic transformed output and manifests', async () => {
   const out = mkdtempSync(join(tmpdir(), 'replay-claim-'));
   const source = resolve('examples/valid-customers.csv');
   const before = readFileSync(source);
@@ -187,7 +187,73 @@ test('@claim:cli-replay @claim:mapping-v1 @claim:source-unchanged @claim:json-ou
   expect(JSON.parse(readFileSync(join(rulesRoot, 'out/validation.json'), 'utf8')).issues[0].rule).toBe('required');
 });
 
-test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {
+test('@claim:source-unchanged rejects an output path that resolves to the source CSV', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-collision-'));
+  const source = join(root, 'output.csv');
+  const mapping = join(root, 'mapping.json');
+  cpSync(resolve('examples/valid-customers.csv'), source);
+  cpSync(resolve('examples/mapping.json'), mapping);
+  const before = readFileSync(source);
+
+  const result = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', mapping, '--out-dir', root, '--json',
+  ], { encoding: 'utf8' });
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain('source CSV');
+  expect(result.stderr).toContain('resolves to output artifact');
+  expect(result.stderr).toContain('choose another --out-dir');
+  expect(readFileSync(source)).toEqual(before);
+  expect(readdirSync(root).sort()).toEqual(['mapping.json', 'output.csv']);
+
+  const mappingRoot = mkdtempSync(join(tmpdir(), 'replay-mapping-collision-'));
+  const mappingSource = join(mappingRoot, 'source.csv');
+  const collidingMapping = join(mappingRoot, 'evidence.json');
+  cpSync(resolve('examples/valid-customers.csv'), mappingSource);
+  cpSync(resolve('examples/mapping.json'), collidingMapping);
+  const mappingBefore = readFileSync(collidingMapping);
+  const mappingResult = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', mappingSource, '--mapping', collidingMapping, '--out-dir', mappingRoot,
+  ], { encoding: 'utf8' });
+  expect(mappingResult.status).toBe(1);
+  expect(mappingResult.stderr).toContain('mapping');
+  expect(mappingResult.stderr).toContain('resolves to output artifact');
+  expect(readFileSync(collidingMapping)).toEqual(mappingBefore);
+  expect(readdirSync(mappingRoot).sort()).toEqual(['evidence.json', 'source.csv']);
+});
+
+test('@claim:atomic-artifacts malformed later rows publish no partial artifacts and preserve a complete replay', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-atomic-'));
+  const source = join(root, 'source.csv');
+  const output = join(root, 'out');
+  writeFileSync(source, 'Customer ID,Email,Start Date,Plan\nC-1001,good@example.com,04/18/2025,Starter\nC-1002,short@example.com\n');
+
+  const malformed = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', resolve('examples/mapping.json'), '--out-dir', output,
+  ], { encoding: 'utf8' });
+  expect(malformed.status).toBe(1);
+  expect(malformed.stderr).toContain('source CSV row 3 is malformed');
+  expect(readdirSync(output)).toEqual([]);
+
+  cpSync(resolve('examples/valid-customers.csv'), source);
+  execFileSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', resolve('examples/mapping.json'), '--out-dir', output,
+  ]);
+  const before = Object.fromEntries(
+    ['output.csv', 'evidence.json', 'validation.json', 'rollback-manifest.json']
+      .map(name => [name, readFileSync(join(output, name))]),
+  );
+  writeFileSync(source, 'Customer ID,Email,Start Date,Plan\nC-1001,good@example.com,04/18/2025,Starter\nC-1002,short@example.com\n');
+  const rerun = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', resolve('examples/mapping.json'), '--out-dir', output,
+  ]);
+  expect(rerun.status).toBe(1);
+  for (const [name, expected] of Object.entries(before)) {
+    expect(readFileSync(join(output, name))).toEqual(expected);
+  }
+});
+
+test('@claim:checkout-redirect buying the kit redirects from Sociobot to Dodo checkout', async () => {
   for (const method of ['GET', 'HEAD']) {
     const response = await fetch(checkoutUrl, { method, redirect: 'manual' });
     expect(response.status, `${method} checkout response`).toBe(303);
@@ -195,6 +261,35 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
     expect(location, `${method} checkout location`).toBeTruthy();
     expect(new URL(location!).hostname).toBe('checkout.dodopayments.com');
   }
+});
+
+test('@claim:license-return-storage @claim:license-url-stripping checkout return stores the token and removes it from the URL', async ({ page }) => {
+  let verifyUrl = '';
+  await page.route('https://api.sociobot.in/**', route => {
+    verifyUrl = route.request().url();
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ valid: false, reason: 'invalid', expires_at: null }) });
+  });
+
+  await page.goto('/?license=returned-secret&ref=checkout#team-kit');
+  await expect(page.getByText('License no longer active. Check the token or buy the team kit.')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('returned-secret');
+  expect(page.url()).toBe('http://127.0.0.1:4173/?ref=checkout#team-kit');
+  expect(verifyUrl).toBe('https://api.sociobot.in/api/v1/products/import-mapping-replay/verify?license=returned-secret');
+});
+
+test('purchase copy names the merchant of record and refund handling', async ({ page }) => {
+  for (const path of ['/', '/terms']) {
+    await page.goto(path);
+    await expect(page.getByText('Dodo Payments is the merchant of record and handles refunds.')).toBeVisible();
+    await expect(page.getByText('A refund revokes the license automatically.')).toBeVisible();
+  }
+  await page.goto('/privacy');
+  await expect(page.getByText('Dodo Payments is the merchant of record and handles payment data.')).toBeVisible();
+  await expect(page.getByText('Dodo Payments handles refunds.')).toBeVisible();
+  await expect(page.getByText('A refund revokes the license automatically.')).toBeVisible();
+});
+
+test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {
   let verifyUrl = '';
   const requests: string[] = [];
   page.on('request', request => requests.push(request.url()));
