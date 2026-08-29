@@ -70,6 +70,13 @@
     "sandbox": "shipped customer CSV and version 1 mapping; assert mapped email, date, plan, and evidence"
   },
   {
+    "id": "email-domain-validation",
+    "claim": "Email validation rejects domains with a leading, trailing, or repeated dot.",
+    "where": "README validation documentation",
+    "test": "npm test -- --grep @claim:email-domain-validation",
+    "sandbox": "fresh temporary CSV with one supported address and a leading, trailing, and repeated-dot domain; assert exit 2 and three email issues"
+  },
+  {
     "id": "source-unchanged",
     "claim": "A replay rejects output paths that resolve to the source CSV or mapping and never changes those inputs.",
     "where": "landing limits and README",
@@ -138,6 +145,13 @@
     "where": "privacy page, terms, and README",
     "test": "npm test -- --grep @claim:license-url-stripping",
     "sandbox": "open /?license=returned-secret&ref=checkout#team-kit; assert the visible URL becomes /?ref=checkout#team-kit"
+  },
+  {
+    "id": "license-return-token-binding",
+    "claim": "A returned license is verified before it can make the team kit available.",
+    "where": "README, privacy page, terms page",
+    "test": "npm test -- --grep @claim:license-return-token-binding",
+    "sandbox": "seed fresh opposite-token valid and invalid verdicts, return a new checkout token, and assert one request for that token with the matching locked or unlocked result"
   },
   {
     "id": "license-privacy",

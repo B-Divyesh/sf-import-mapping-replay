@@ -70,6 +70,8 @@ Mappings have a stable integer `version`. Version 1 maps named source columns to
 
 Version 1 transforms are `trim`, `lowercase`, `uppercase`, `replace`, and `date`. Validation rules are `required`, `email`, `one_of`, and `unique`. A field may use `default` when its source cell is empty.
 
+Email validation accepts one ASCII local part and a domain with two or more labels. It rejects spaces and leading, trailing, or repeated domain dots.
+
 Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Duplicate CSV headers return exit code 1 before an output directory is created; rename the duplicate headers and run again. Validation failures return exit code 2 after writing review files.
 
 The CLI rejects a source or mapping that resolves to an output artifact. It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. A malformed later row leaves no partial artifact. If a complete replay already exists, a failed rerun leaves all four prior files unchanged.
@@ -97,7 +99,7 @@ CSV processing runs in the local binary. The CLI makes no network requests while
 
 The core CLI needs no license. A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields.
 
-The buy link opens Dodo Payments checkout through Sociobot. After checkout, the site stores the returned license in `localStorage`, removes it from the address bar, and verifies it with Sociobot.
+The buy link opens Dodo Payments checkout through Sociobot. After checkout, the site stores the returned license in `localStorage` and removes it from the address bar. It checks that exact token with Sociobot before making the team kit available.
 
 ## License
 

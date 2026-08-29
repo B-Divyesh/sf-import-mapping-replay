@@ -256,6 +256,16 @@ test('@claim:site-routing-headers static host serves routes, a custom 404, and s
     expect(response.status(), path).toBe(404);
     expect(await response.text()).toContain('<title>Page not found — Import Mapping Replay</title>');
   }
+  for (const path of ['/assets/replay-poster.webp', '/assets/og-replay.webp']) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+    expect(response.headers()['cache-control'], path).toBe('public, max-age=0, must-revalidate');
+  }
+  const assets = readdirSync(resolve('dist/site/assets'));
+  const hashedScript = assets.find(file => /^main-[\w-]+\.js$/.test(file));
+  expect(hashedScript).toBeTruthy();
+  const response = await request.get(`/assets/${hashedScript}`);
+  expect(response.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
 });
 
 test('@claim:mit-license Cargo metadata and LICENSE contain the MIT terms', async () => {
@@ -300,6 +310,33 @@ test('@claim:cli-replay @claim:mapping-v1 @claim:json-output CLI writes determin
   expect(rulesResult.status).toBe(2);
   expect(readFileSync(join(rulesRoot, 'out/output.csv'), 'utf8')).toContain('X,hello,new,2025-04-18,fallback');
   expect(JSON.parse(readFileSync(join(rulesRoot, 'out/validation.json'), 'utf8')).issues[0].rule).toBe('required');
+});
+
+test('@claim:email-domain-validation CLI rejects malformed email-domain boundaries', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-email-boundaries-'));
+  const source = join(root, 'emails.csv');
+  const mapping = join(root, 'mapping.json');
+  const output = join(root, 'out');
+  writeFileSync(source, 'email\nvalid@example.com\na@.com\na@example.\na@b..com\n');
+  writeFileSync(mapping, JSON.stringify({
+    version: 1,
+    fields: [{ target: 'email', source: 'email', validate: [{ rule: 'email' }] }],
+  }));
+
+  const result = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', mapping, '--out-dir', output, '--json',
+  ], { encoding: 'utf8' });
+
+  expect(result.status).toBe(2);
+  expect(result.stderr).toBe('');
+  expect(JSON.parse(result.stdout)).toMatchObject({ status: 'review_required', rows: 4, validation_errors: 3 });
+  const validation = JSON.parse(readFileSync(join(output, 'validation.json'), 'utf8'));
+  expect(validation).toMatchObject({ valid: false, error_count: 3 });
+  expect(validation.issues).toEqual(expect.arrayContaining([
+    expect.objectContaining({ source_row: 3, rule: 'email', value: 'a@.com' }),
+    expect.objectContaining({ source_row: 4, rule: 'email', value: 'a@example.' }),
+    expect.objectContaining({ source_row: 5, rule: 'email', value: 'a@b..com' }),
+  ]));
 });
 
 test('@claim:source-unchanged rejects an output path that resolves to the source CSV', async () => {
@@ -432,6 +469,50 @@ test('@claim:license-return-storage @claim:license-url-stripping checkout return
   expect(verifyUrl).toBe('https://api.sociobot.in/api/v1/products/import-mapping-replay/verify?license=returned-secret');
 });
 
+test('@claim:license-return-token-binding returned checkout tokens never reuse another token’s verdict', async ({ page }) => {
+  const verifiedTokens: string[] = [];
+  await page.route('https://api.sociobot.in/**', route => {
+    const token = new URL(route.request().url()).searchParams.get('license');
+    verifiedTokens.push(token || '');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ valid: token === 'new-valid-token', reason: token === 'new-valid-token' ? 'ok' : 'invalid', expires_at: null }),
+    });
+  });
+
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem('sb_license:import-mapping-replay', 'old-valid-token');
+    localStorage.setItem('sb_license_verdict:import-mapping-replay', JSON.stringify({
+      token: 'old-valid-token', valid: true, checked: Date.now(),
+    }));
+  });
+  await page.goto('/?license=new-invalid-token&ref=qa12#team-kit');
+  await expect(page.getByText('License no longer active. Check the token or buy the team kit.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download team kit' })).toBeHidden();
+  expect(verifiedTokens).toEqual(['new-invalid-token']);
+  expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('new-invalid-token');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sb_license_verdict:import-mapping-replay') || 'null'))).toEqual(expect.objectContaining({
+    token: 'new-invalid-token', valid: false,
+  }));
+
+  await page.evaluate(() => {
+    localStorage.setItem('sb_license:import-mapping-replay', 'old-invalid-token');
+    localStorage.setItem('sb_license_verdict:import-mapping-replay', JSON.stringify({
+      token: 'old-invalid-token', valid: false, checked: Date.now(),
+    }));
+  });
+  verifiedTokens.length = 0;
+  await page.goto('/?license=new-valid-token&ref=qa12#team-kit');
+  await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download team kit' })).toBeVisible();
+  expect(verifiedTokens).toEqual(['new-valid-token']);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sb_license_verdict:import-mapping-replay') || 'null'))).toEqual(expect.objectContaining({
+    token: 'new-valid-token', valid: true,
+  }));
+});
+
 test('purchase copy keeps only the checkout behavior covered by evidence', async ({ page }) => {
   for (const path of ['/', '/privacy', '/terms']) {
     await page.goto(path);
@@ -551,7 +632,7 @@ test('@claim:license-cache-day cached license is checked at most once in 24 hour
 });
 
 test('@claim:license-unavailable-fallback an aged valid result keeps the team kit available when verification fails', async ({ page }) => {
-  const cachedVerdict = { valid: true, checked: Date.now() - 86_400_001 };
+  const cachedVerdict = { token: 'outage-test-license', valid: true, checked: Date.now() - 86_400_001 };
   await page.addInitScript(({ cachedVerdict }) => {
     localStorage.setItem('sb_license:import-mapping-replay', 'outage-test-license');
     localStorage.setItem('sb_license_verdict:import-mapping-replay', JSON.stringify(cachedVerdict));

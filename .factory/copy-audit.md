@@ -1,4 +1,4 @@
-# Copy audit — polish 6
+# Copy audit — repair 7
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -86,8 +86,9 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. No 
 | New or changed copy | Words | Result |
 | --- | ---: | --- |
 | Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
-| After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot. | 19 | Pass |
-| The site stores a returned license, removes it from the address bar, and verifies it with Sociobot. | 17 | Pass |
+| After checkout, this site stores the returned license and removes it from the address bar. | 14 | Pass |
+| The site stores a returned license and removes it from the address bar. | 12 | Pass |
+| It checks that exact token with Sociobot before making the team kit available. | 13 | Pass: `license-return-token-binding` |
 | The CLI is provided under the MIT License. | 8 | Pass: `mit-license` |
 
 The route headings remain literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
@@ -113,6 +114,8 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Version 1 transforms are trim, lowercase, uppercase, replace, and date. | 10 | Pass |
 | Validation rules are required, email, one_of, and unique. | 8 | Pass |
 | A field may use default when its source cell is empty. | 11 | Pass |
+| Email validation accepts one ASCII local part and a domain with two or more labels. | 15 | Pass: `email-domain-validation` |
+| It rejects spaces and leading, trailing, or repeated domain dots. | 10 | Pass: `email-domain-validation` |
 | Missing mapped columns return exit code 1 and say to check the CSV header or mapping. | 16 | Pass |
 | Validation failures return exit code 2 after writing review files. | 10 | Pass |
 | The CLI rejects a source or mapping that resolves to an output artifact. | 12 | Pass |
@@ -130,7 +133,8 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | The core CLI needs no license. | 6 | Pass |
 | A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields. | 19 | Pass |
 | The buy link opens Dodo Payments checkout through Sociobot. | 9 | Pass |
-| After checkout, the site stores the returned license in localStorage, removes it from the address bar, and verifies it with Sociobot. | 21 | Pass |
+| After checkout, the site stores the returned license in localStorage and removes it from the address bar. | 16 | Pass |
+| It checks that exact token with Sociobot before making the team kit available. | 13 | Pass: `license-return-token-binding` |
 | MIT. | 1 | Pass: `mit-license` |
 | See LICENSE. | 2 | Pass: direct instruction |
 

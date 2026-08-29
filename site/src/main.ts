@@ -7,7 +7,7 @@ const SITE_ORIGIN = 'https://import-mapping-replay.sociobot.in';
 
 type Route = '/' | '/demo' | '/privacy' | '/terms' | '/404';
 type HistoryPosition = { scrollX: number; scrollY: number };
-type LicenseVerdict = { valid: boolean; checked: number };
+type LicenseVerdict = { token: string; valid: boolean; checked: number };
 
 const sampleTranscript = `<span class="prompt">$ import-mapping-replay demo</span>
 Replay complete: 5 source rows
@@ -225,7 +225,7 @@ const privacy = `
     <section class="section"><div class="section-inner prose">
       <h2>What the CLI handles</h2><p>The CLI reads the source CSV and mapping you name. It writes results to your chosen output directory.</p><p>The CLI makes no network requests while replaying a CSV.</p>
       <h2>What the website stores</h2><p>The demo uses bundled sample data and stores nothing. A pasted license is stored in this browser under <code>sb_license:import-mapping-replay</code>.</p><p>The site sends that license only to the Sociobot verification endpoint. The cached result is checked at most once each day.</p>
-      <h2>What checkout handles</h2><p>Checkout opens through Sociobot on Dodo Payments.</p><p>After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot.</p>
+      <h2>What checkout handles</h2><p>Checkout opens through Sociobot on Dodo Payments.</p><p>After checkout, this site stores the returned license and removes it from the address bar.</p><p>It checks that exact token with Sociobot before making the team kit available.</p>
       <h2>Remove stored data</h2><p>Clear this site’s browser storage to remove the license and cached result.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;
@@ -237,7 +237,7 @@ const terms = `
     <section class="section"><div class="section-inner prose">
       <h2>Local utility</h2><p>Import Mapping Replay transforms files you provide. You remain responsible for the source data, mapping, and final upload.</p>
       <h2>Rollback scope</h2><p>The rollback manifest preserves source rows from one local run. It cannot delete or change records in another product.</p>
-      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens through Sociobot on Dodo Payments.</p><p>The site stores a returned license, removes it from the address bar, and verifies it with Sociobot.</p>
+      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens through Sociobot on Dodo Payments.</p><p>The site stores a returned license and removes it from the address bar.</p><p>It checks that exact token with Sociobot before making the team kit available.</p>
       <h2>Software terms</h2><p>The CLI is provided under the MIT License. The software is provided without warranty, as the license explains.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;
@@ -318,17 +318,32 @@ function cancelLicenseVerification(): void {
   licenseVerificationController = null;
 }
 
+function readCachedVerdict(token: string): LicenseVerdict | null {
+  const stored = localStorage.getItem(VERDICT_KEY);
+  if (!stored) return null;
+  try {
+    const verdict = JSON.parse(stored) as Partial<LicenseVerdict>;
+    if (
+      verdict.token === token
+      && typeof verdict.valid === 'boolean'
+      && typeof verdict.checked === 'number'
+      && Number.isFinite(verdict.checked)
+    ) {
+      return verdict as LicenseVerdict;
+    }
+  } catch {
+    // A malformed or legacy verdict must never authorize a different token.
+  }
+  localStorage.removeItem(VERDICT_KEY);
+  return null;
+}
+
 async function verifyLicense(token: string, force = false): Promise<void> {
   if (!token || currentRoute() === '/demo') return;
   cancelLicenseVerification();
   const controller = new AbortController();
   licenseVerificationController = controller;
-  let cached: LicenseVerdict | null = null;
-  try {
-    cached = JSON.parse(localStorage.getItem(VERDICT_KEY) || 'null') as LicenseVerdict | null;
-  } catch {
-    localStorage.removeItem(VERDICT_KEY);
-  }
+  const cached = readCachedVerdict(token);
   const fresh = cached && Date.now() - cached.checked < 86_400_000;
   if (cached?.valid) setLicenseState(true, 'License active. The team kit is ready.');
   if (fresh && !force) {
@@ -341,7 +356,7 @@ async function verifyLicense(token: string, force = false): Promise<void> {
     if (!response.ok) throw new Error('verification unavailable');
     const result = await response.json() as { valid: boolean };
     if (controller.signal.aborted || licenseVerificationController !== controller || currentRoute() === '/demo') return;
-    localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: result.valid, checked: Date.now() }));
+    localStorage.setItem(VERDICT_KEY, JSON.stringify({ token, valid: result.valid, checked: Date.now() }));
     setLicenseState(result.valid, result.valid ? 'License active. The team kit is ready.' : 'License no longer active. Check the token or buy the team kit.');
   } catch {
     if (controller.signal.aborted || licenseVerificationController !== controller || currentRoute() === '/demo') return;
@@ -351,15 +366,18 @@ async function verifyLicense(token: string, force = false): Promise<void> {
   }
 }
 
-function processReturnedLicense(): void {
-  if (currentRoute() === '/demo') return;
+function processReturnedLicense(): string | null {
+  if (currentRoute() === '/demo') return null;
   const params = new URLSearchParams(location.search);
   const token = params.get('license');
-  if (!token) return;
+  if (!token) return null;
+  const priorToken = localStorage.getItem(LICENSE_KEY);
   localStorage.setItem(LICENSE_KEY, token);
+  if (priorToken !== token) localStorage.removeItem(VERDICT_KEY);
   params.delete('license');
   const query = params.toString();
   history.replaceState({}, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+  return token;
 }
 
 function bindPage(): void {
@@ -390,7 +408,7 @@ function bindPage(): void {
   document.querySelector('#download-kit')?.addEventListener('click', downloadKit);
   if (currentRoute() === '/') {
     const stored = localStorage.getItem(LICENSE_KEY);
-    if (stored) void verifyLicense(stored);
+    if (stored) void verifyLicense(stored, stored === returnedLicense);
   }
 }
 
@@ -470,7 +488,7 @@ function render(moveFocus = false, restorePosition?: HistoryPosition): void {
   });
 }
 
-processReturnedLicense();
+const returnedLicense = processReturnedLicense();
 history.scrollRestoration = 'manual';
 if (!history.state || typeof history.state.scrollY !== 'number') {
   history.replaceState({ ...history.state, scrollX: window.scrollX, scrollY: window.scrollY }, '');

@@ -153,7 +153,7 @@ try {
 
   const outageContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const outagePage = await outageContext.newPage();
-  const agedVerdict = { valid: true, checked: Date.now() - 86_400_001 };
+  const agedVerdict = { token: 'OUTAGE-SENTINEL', valid: true, checked: Date.now() - 86_400_001 };
   await outagePage.addInitScript(({ licenseKey, verdictKey, agedVerdict }) => {
     localStorage.setItem(licenseKey, 'OUTAGE-SENTINEL');
     localStorage.setItem(verdictKey, JSON.stringify(agedVerdict));

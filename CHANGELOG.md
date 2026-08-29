@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 repair 7 — 2026-08-29
+
+- Bind cached team-kit verdicts to their license token and force checkout returns to verify.
+- Reject malformed email domain boundaries before a reviewed replay is marked valid.
+- Revalidate stable poster assets while retaining immutable caching for hashed bundles.
+
 ## 0.1.0 repair 6 — 2026-08-29
 
 - Reject duplicate source CSV headers before any replay output is created.

@@ -126,6 +126,67 @@ fn transform_value(value: &str, transform: &Transform) -> Result<String> {
     })
 }
 
+/// Accept the deliberately small, documented email form used by version 1 mappings.
+/// It is ASCII-only: one non-empty local part and a dot-separated domain with
+/// non-empty alphanumeric labels (hyphens may appear inside a label).
+fn is_supported_email(value: &str) -> bool {
+    let Some((local, domain)) = value.split_once('@') else {
+        return false;
+    };
+    if local.is_empty() || domain.is_empty() || value.matches('@').count() != 1 {
+        return false;
+    }
+    if local.starts_with('.') || local.ends_with('.') || local.contains("..") {
+        return false;
+    }
+    if !local.bytes().all(|byte| {
+        byte.is_ascii_alphanumeric()
+            || matches!(
+                byte,
+                b'.' | b'!'
+                    | b'#'
+                    | b'$'
+                    | b'%'
+                    | b'&'
+                    | b'\''
+                    | b'*'
+                    | b'+'
+                    | b'-'
+                    | b'/'
+                    | b'='
+                    | b'?'
+                    | b'^'
+                    | b'_'
+                    | b'`'
+                    | b'{'
+                    | b'|'
+                    | b'}'
+                    | b'~'
+            )
+    }) {
+        return false;
+    }
+
+    let labels = domain.split('.').collect::<Vec<_>>();
+    if labels.len() < 2 {
+        return false;
+    }
+    if !labels.iter().all(|label| {
+        let bytes = label.as_bytes();
+        !bytes.is_empty()
+            && bytes.first().is_some_and(u8::is_ascii_alphanumeric)
+            && bytes.last().is_some_and(u8::is_ascii_alphanumeric)
+            && bytes
+                .iter()
+                .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+    }) {
+        return false;
+    }
+    labels.last().is_some_and(|label| {
+        label.len() >= 2 && label.bytes().all(|byte| byte.is_ascii_alphabetic())
+    })
+}
+
 fn validate_mapping(mapping: &Mapping) -> Result<()> {
     if mapping.version != 1 {
         bail!(
@@ -403,12 +464,7 @@ pub fn run_replay(
             for rule in &field.validate {
                 let failed = match rule {
                     Validation::Required => after.trim().is_empty(),
-                    Validation::Email => {
-                        !after.is_empty()
-                            && (after.matches('@').count() != 1
-                                || after.starts_with('@')
-                                || !after.split('@').nth(1).unwrap_or_default().contains('.'))
-                    }
+                    Validation::Email => !after.is_empty() && !is_supported_email(&after),
                     Validation::OneOf { values } => !after.is_empty() && !values.contains(&after),
                     Validation::Unique => false,
                 };
@@ -566,6 +622,22 @@ mod tests {
         let rollback = fs::read_to_string(report.rollback_manifest).unwrap();
         assert!(rollback.contains("MAYA.RIVERA@NORTHSTAR.EXAMPLE"));
         assert!(rollback.contains("cannot undo records"));
+    }
+
+    #[test]
+    fn email_validation_rejects_malformed_domain_boundaries() {
+        for address in ["a@.com", "a@example.", "a@b..com"] {
+            assert!(
+                !is_supported_email(address),
+                "{address} must not pass email validation"
+            );
+        }
+        for address in ["maya.rivera@northstar.example", "person+tag@sub.example.co"] {
+            assert!(
+                is_supported_email(address),
+                "{address} should remain a supported address"
+            );
+        }
     }
 
     #[test]
