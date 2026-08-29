@@ -176,7 +176,7 @@ h3 { font-size: 20px; }
   .demo-hero .lede { font-size: 16px; line-height: 1.35; }
   .demo-snapshot { grid-template-columns: 1fr; box-shadow: 5px 5px 0 var(--brass); }
   .sample-map, .sample-issue { border-right: 0; border-bottom: 1px solid var(--ink); padding: 10px 12px; }
-  .sample-map { grid-template-columns: auto 1fr; }
+  .sample-map { grid-template-columns: 1fr; }
   .sample-map span[aria-hidden="true"] { display: none; }
   .sample-map code:last-child::before { content: "→ "; color: var(--signal-dark); font-weight: 900; }
   .demo-snapshot .button { min-height: 44px; border: 0; }
