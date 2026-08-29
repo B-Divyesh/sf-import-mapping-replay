@@ -7,6 +7,20 @@
     "sandbox": "fresh browser context at /demo with bundled sample data"
   },
   {
+    "id": "demo-row-count",
+    "claim": "The bundled sample replay processes five source rows.",
+    "where": "landing preview and demo summary",
+    "test": "npm test -- --grep @claim:demo-row-count",
+    "sandbox": "fresh CLI demo in a temporary directory; assert five rows and five output records"
+  },
+  {
+    "id": "recorded-cli-sample",
+    "claim": "The landing recording shows results from the bundled CLI sample.",
+    "where": "landing recording label and terminal",
+    "test": "npm test -- --grep @claim:recorded-cli-sample",
+    "sandbox": "fresh CLI demo plus landing page; assert the same row count, error count, and four review filenames"
+  },
+  {
     "id": "review-files",
     "claim": "A replay writes output.csv, evidence.json, validation.json, and rollback-manifest.json.",
     "where": "landing preview and README",
@@ -78,10 +92,10 @@
   },
   {
     "id": "paid-kit",
-    "claim": "A £24 one-time license provides the team mapping kit.",
+    "claim": "A £24 one-time license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields.",
     "where": "landing paid section and README",
     "test": "npm test -- --grep @claim:paid-kit",
-    "sandbox": "fresh browser context with a recorded valid Sociobot verification response"
+    "sandbox": "fresh browser context with a recorded valid Sociobot verification response; download and inspect the five recipe records and structured checklist"
   },
   {
     "id": "license-privacy",

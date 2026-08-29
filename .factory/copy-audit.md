@@ -1,4 +1,4 @@
-# Copy audit — polish round 1
+# Copy audit — polish round 2
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -15,7 +15,7 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | The CLI runs without internet. | 5 | Pass |
 | The core CLI needs no license. | 6 | Pass |
 | The team kit costs £24 once. | 6 | Pass |
-| Recorded from the real CLI | 5 | Pass |
+| Recorded from the bundled CLI | 5 | Pass |
 | See the failed rows before upload | 6 | Pass |
 | The sample replay transforms five customers and writes four review files. | 11 | Pass |
 | It catches three source errors. | 5 | Pass |
@@ -49,8 +49,8 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | Keep the source CSV, mapping, and review files together for each customer upload. | 13 | Pass |
 | Optional team kit / Standardise the review handoff | 3 / 4 | Pass |
 | The team kit adds mapping recipes and a sign-off checklist. | 10 | Pass |
-| Five mapping recipes for common template fields. | 7 | Pass |
-| A review checklist with owner and approval fields. | 8 | Pass |
+| Five named mapping recipes for common template fields. | 8 | Pass |
+| A review checklist with upload owner and second-engineer approval fields. | 10 | Pass |
 | Team mapping kit / One-time purchase. | 3 / 2 | Pass |
 | Checkout opens on Dodo. | 4 | Pass |
 | Buy the team kit | 4 | Pass |
@@ -60,6 +60,23 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | Read the privacy notice and terms. | 6 | Pass |
 | Replay local CSV mappings with review evidence. | 7 | Pass |
 | Privacy / Terms / Built by Param Factory | 1 / 1 / 4 | Pass |
+
+## Demo route
+
+| Copy | Words | Result |
+| --- | ---: | --- |
+| Five sample customers · three errors | 5 | Pass |
+| Review a finished CSV replay | 5 | Pass |
+| Inspect one mapped value and fix a sample error. | 10 | Pass |
+| Nothing is saved. | 4 | Pass |
+| Source email | 2 | Pass |
+| Row 5 needs review | 5 | Pass |
+| email · not-an-email | 2 | Pass |
+| Enter an email address. | 4 | Pass |
+| Fix the sample email | 5 | Pass |
+| Sample correction applied. | 3 | Pass |
+| Two errors remain. | 3 | Pass |
+| Reset demo | 2 | Pass |
 
 ## Other routes
 
@@ -98,7 +115,7 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. The
 | The CLI makes no network requests while replaying a CSV. | 10 | Pass |
 | The website stores only a pasted license and its last verification result in your browser. | 14 | Pass |
 | The core CLI needs no license. | 6 | Pass |
-| A one-time £24 license provides mapping recipes and a sign-off checklist. | 11 | Pass |
+| A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields. | 19 | Pass |
 
 ## Terminology
 
@@ -114,4 +131,4 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. The
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay customer CSV imports into a reviewed output file and error report before upload.” (87 characters.)
+Catalog description: “Replay customer CSV imports into reviewed output and error files before upload.” (79 characters.)

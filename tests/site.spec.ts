@@ -7,6 +7,10 @@ import { join, resolve } from 'node:path';
 
 const checkoutUrl = 'https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout';
 
+function runBundledDemo(): Record<string, string | number> {
+  return JSON.parse(execFileSync(resolve('target/debug/import-mapping-replay'), ['demo', '--json'], { encoding: 'utf8' }));
+}
+
 function networkGuard(root: string): { library: string; log: string } {
   const library = join(root, 'network-guard.so');
   const log = join(root, 'network.log');
@@ -15,6 +19,14 @@ function networkGuard(root: string): { library: string; log: string } {
 }
 
 test('@claim:demo-errors sample replay catches three source errors', async ({ page }) => {
+  const result = runBundledDemo();
+  expect(result.validation_errors).toBe(3);
+  const validation = JSON.parse(readFileSync(String(result.validation), 'utf8'));
+  expect(validation.issues).toEqual(expect.arrayContaining([
+    expect.objectContaining({ source_row: 5, field: 'email', value: 'not-an-email' }),
+    expect.objectContaining({ source_row: 6, field: 'external_id', value: 'C-1043' }),
+    expect.objectContaining({ source_row: 6, field: 'plan', value: 'legacy' }),
+  ]));
   await page.goto('/demo');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review a finished CSV replay');
   await expect(page.getByText('3', { exact: true })).toBeVisible();
@@ -25,9 +37,34 @@ test('@claim:demo-errors sample replay catches three source errors', async ({ pa
 });
 
 test('@claim:review-files sample produces all four review files', async ({ page }) => {
+  const result = runBundledDemo();
+  for (const path of [result.output_csv, result.evidence, result.validation, result.rollback_manifest]) {
+    expect(existsSync(String(path))).toBe(true);
+    expect(readFileSync(String(path), 'utf8').trim()).not.toBe('');
+  }
   await page.goto('/demo');
   for (const file of ['output.csv', 'evidence.json', 'validation.json', 'rollback-manifest.json']) {
     await expect(page.getByText(file, { exact: true })).toBeVisible();
+  }
+});
+
+test('@claim:demo-row-count bundled demo replays five source rows', async () => {
+  const result = runBundledDemo();
+  expect(result.rows).toBe(5);
+  expect(readFileSync(String(result.output_csv), 'utf8').trim().split('\n')).toHaveLength(6);
+});
+
+test('@claim:recorded-cli-sample landing recording matches bundled CLI demo outcomes', async ({ page }) => {
+  const result = runBundledDemo();
+  const validation = JSON.parse(readFileSync(String(result.validation), 'utf8'));
+  expect(result).toMatchObject({ rows: 5, validation_errors: 3 });
+  expect(validation.issues).toHaveLength(3);
+  await page.goto('/');
+  await expect(page.getByText('Recorded from the bundled CLI')).toBeVisible();
+  await expect(page.locator('#terminal-output')).toContainText('Replay complete: 5 source rows');
+  await expect(page.locator('#terminal-output')).toContainText('Validation: 3 errors — review required');
+  for (const file of ['output.csv', 'evidence.json', 'validation.json', 'rollback-manifest.json']) {
+    await expect(page.locator('#terminal-output')).toContainText(file);
   }
 });
 
@@ -42,7 +79,7 @@ test('@claim:demo-private demo stores nothing and sends no data away', async ({ 
   expect(requests.every(url => new URL(url).origin === 'http://127.0.0.1:4173')).toBe(true);
 });
 
-test('@claim:cli-offline @claim:demo-temp CLI replays bundled data without a service or account', async () => {
+test('@claim:cli-offline CLI replays bundled data without a service or account', async () => {
   const output = execFileSync(resolve('target/debug/import-mapping-replay'), ['demo', '--json'], {
     encoding: 'utf8',
     env: { ...process.env, HTTP_PROXY: 'http://127.0.0.1:1', HTTPS_PROXY: 'http://127.0.0.1:1', NO_PROXY: '' },
@@ -50,8 +87,14 @@ test('@claim:cli-offline @claim:demo-temp CLI replays bundled data without a ser
   const result = JSON.parse(output);
   expect(result.rows).toBe(5);
   expect(result.validation_errors).toBe(3);
-  expect(result.demo_directory).toContain('import-mapping-replay-demo-');
   expect(readFileSync(result.output_csv, 'utf8')).toContain('maya.rivera@northstar.example');
+});
+
+test('@claim:demo-temp CLI demo copies bundled data into a fresh temporary directory', async () => {
+  const result = runBundledDemo();
+  expect(String(result.demo_directory)).toContain('import-mapping-replay-demo-');
+  expect(existsSync(join(String(result.demo_directory), 'customers.csv'))).toBe(true);
+  expect(existsSync(join(String(result.demo_directory), 'mapping.json'))).toBe(true);
 });
 
 test('@claim:cli-local-only CLI replay makes no network call', async () => {
@@ -175,7 +218,10 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
   const path = await download.path();
   const kit = JSON.parse(readFileSync(path!, 'utf8'));
   expect(kit.recipes).toHaveLength(5);
-  expect(kit.review).toHaveLength(4);
+  expect(kit.recipes.every((recipe: { id: string; name: string; fields: string[]; steps: string[] }) => recipe.id && recipe.name && recipe.fields.length && recipe.steps.length)).toBe(true);
+  expect(kit.review.owner).toEqual({ label: 'Upload owner', value: '' });
+  expect(kit.review.approval).toEqual({ label: 'Second engineer approval', value: '' });
+  expect(kit.review.checks).toContain('Record approval before upload');
 });
 
 test('@claim:website-license-storage-only license flow uses only its two documented browser keys', async ({ page }) => {
@@ -288,9 +334,35 @@ test('direct demo query is isolated and exposes reset and exit controls', async 
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reset demo' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Start for real' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fix the sample email' }).click();
+  await expect(page.getByText('Sample correction applied. Two errors remain.')).toBeVisible();
+  await expect(page.locator('#demo-error-count')).toHaveText('2');
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByRole('heading', { name: 'The replay needs review' })).toBeFocused();
+  await expect(page.locator('#demo-error-value')).toHaveText('email · not-an-email');
+  await expect(page.locator('#demo-error-count')).toHaveText('3');
   expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('real-license-sentinel');
+});
+
+test('demo first view shows a mapped value and a complete validation row on mobile', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Try it with sample data' }).click();
+  await expect(page).toHaveURL(/\/demo$/);
+  const snapshot = page.getByLabel('Sample replay result');
+  for (const text of ['maya.rivera@northstar.example', 'email · not-an-email', 'Enter an email address.']) {
+    await expect(snapshot.getByText(text, { exact: true })).toBeInViewport();
+  }
+});
+
+test('desktop hero keeps all three product facts in the first viewport', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) < 900, 'desktop-only viewport check');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  for (const text of ['CSV files stay on your computer.', 'The CLI runs without internet.', 'The core CLI needs no license. The team kit costs £24 once.']) {
+    const box = await page.getByText(text, { exact: true }).boundingBox();
+    expect(box?.y || Infinity).toBeGreaterThanOrEqual(0);
+    expect((box?.y || 0) + (box?.height || Infinity)).toBeLessThanOrEqual(page.viewportSize()!.height);
+  }
 });
 
 test('all routes set specific metadata and unknown routes return HTTP 404', async ({ page, request }) => {

@@ -38,12 +38,12 @@ button, .button { min-height: 48px; min-width: 48px; }
 main { display: block; }
 .hero { position: relative; overflow: hidden; border-bottom: 3px solid var(--ink); }
 .hero::after { content: ""; position: absolute; inset: auto 0 0; height: 16px; background: repeating-linear-gradient(90deg, var(--ink) 0 52px, var(--paper) 52px 64px); }
-.hero-grid { width: min(1180px, calc(100% - 32px)); min-height: 690px; margin: auto; display: grid; grid-template-columns: 5fr 7fr; align-items: center; gap: 48px; padding: 72px 0 88px; }
+.hero-grid { width: min(1180px, calc(100% - 32px)); min-height: 620px; margin: auto; display: grid; grid-template-columns: 5fr 7fr; align-items: center; gap: 48px; padding: 48px 0 64px; }
 .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--signal-dark); font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .eyebrow::before { content: ""; width: 34px; height: 8px; border-block: 2px solid var(--brass); }
 h1, h2, h3 { margin-top: 0; line-height: 1.03; }
 h1, h2 { font-family: var(--display); font-weight: 900; letter-spacing: .025em; text-transform: uppercase; }
-h1 { max-width: 8ch; margin-bottom: 24px; font-size: clamp(50px, 6.2vw, 88px); }
+h1 { max-width: 11ch; margin-bottom: 20px; font-size: clamp(50px, 5.2vw, 72px); }
 h2 { font-size: clamp(34px, 4vw, 55px); }
 h3 { font-size: 20px; }
 .lede { max-width: 38ch; font-size: 20px; line-height: 1.5; }
@@ -115,6 +115,19 @@ h3 { font-size: 20px; }
 .demo-banner a { display: inline-flex; align-items: center; text-decoration: none; }
 .page-hero { padding: 72px 0 48px; border-bottom: 3px solid var(--ink); }
 .page-hero h1 { max-width: 13ch; }
+.demo-hero { padding: 24px 0 20px; }
+.demo-hero h1 { margin-bottom: 10px; font-size: clamp(38px, 4.3vw, 56px); }
+.demo-hero .lede { margin: 0 0 14px; font-size: 17px; }
+.demo-hero .eyebrow { margin: 0 0 10px; }
+.demo-snapshot { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(180px, 1fr) auto; align-items: stretch; border: 2px solid var(--ink); background: var(--paper-light); box-shadow: 7px 7px 0 var(--brass); font-size: 14px; }
+.sample-map, .sample-issue { display: grid; gap: 3px; padding: 12px 14px; }
+.sample-map { grid-template-columns: auto 1fr auto 1fr; align-items: center; border-right: 1px solid var(--ink); }
+.sample-map span:first-child, .sample-issue strong { color: var(--signal-dark); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.sample-map code, .sample-issue span { overflow-wrap: anywhere; font: 12px/1.35 var(--mono); }
+.sample-issue { border-right: 1px solid var(--ink); }
+.sample-issue-fixed { background: #dcebdd; }
+.demo-snapshot .button { align-self: stretch; box-shadow: none; border-width: 0 0 0 2px; }
+.demo-snapshot .button:disabled { color: var(--ink); background: #dcebdd; cursor: default; opacity: 1; }
 .content-page { min-height: 62vh; }
 .prose { max-width: 70ch; }
 .prose h2 { margin-top: 48px; font-size: 32px; }
@@ -157,6 +170,16 @@ h3 { font-size: 20px; }
   .artifact-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--brass); }
   .terminal pre { min-height: 400px; padding: 18px; font-size: 12px; }
   .demo-banner { flex-wrap: wrap; gap: 8px; }
+  .demo-hero { padding: 12px 0 16px; }
+  .demo-hero .eyebrow { font-size: 11px; }
+  .demo-hero h1 { max-width: none; font-size: clamp(32px, 9vw, 42px); }
+  .demo-hero .lede { font-size: 16px; line-height: 1.35; }
+  .demo-snapshot { grid-template-columns: 1fr; box-shadow: 5px 5px 0 var(--brass); }
+  .sample-map, .sample-issue { border-right: 0; border-bottom: 1px solid var(--ink); padding: 10px 12px; }
+  .sample-map { grid-template-columns: auto 1fr; }
+  .sample-map span[aria-hidden="true"] { display: none; }
+  .sample-map code:last-child::before { content: "→ "; color: var(--signal-dark); font-weight: 900; }
+  .demo-snapshot .button { min-height: 44px; border: 0; }
   .demo-summary { grid-template-columns: 1fr; }
   .demo-summary div { border-right: 0; border-bottom: 1px solid var(--ink); }
   .issue-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }

@@ -23,7 +23,7 @@ import-mapping-replay --help
 
 The package is ready for registry review with `cargo package`. The factory publishes releases.
 
-## Use it
+## Run a CSV replay
 
 ```sh
 import-mapping-replay run \
@@ -88,7 +88,7 @@ Deploy `dist/site` to Azure Static Web Apps. Its configuration rewrites known ro
 
 CSV processing runs in the local binary. The CLI makes no network requests while replaying a CSV. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
 
-The core CLI needs no license. A one-time £24 license provides mapping recipes and a sign-off checklist.
+The core CLI needs no license. A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields.
 
 ## License
 

@@ -23,6 +23,17 @@ Value is not allowed; use starter, growth, or enterprise.
 <span class="ok">Wrote output.csv, evidence.json,
 validation.json, rollback-manifest.json</span>`;
 
+const demoSnapshot = (fixed = false) => `
+  <div class="demo-snapshot" aria-label="Sample replay result">
+    <div class="sample-map"><span>Source email</span><code>Maya.Rivera@Northstar.example</code><span aria-hidden="true">→</span><code>maya.rivera@northstar.example</code></div>
+    <div class="sample-issue ${fixed ? 'sample-issue-fixed' : ''}">
+      <strong>${fixed ? 'Row 5 corrected' : 'Row 5 needs review'}</strong>
+      <span id="demo-error-value">${fixed ? 'samira.chen@atlas.example' : 'email · not-an-email'}</span>
+      <span id="demo-error-message">${fixed ? 'Sample correction applied. Two errors remain.' : 'Enter an email address.'}</span>
+    </div>
+    <button id="apply-sample-fix" class="button secondary" type="button" ${fixed ? 'disabled' : ''}>${fixed ? 'Sample email corrected' : 'Fix the sample email'}</button>
+  </div>`;
+
 const header = (active: Route) => `
   <header class="site-header">
     <div class="header-inner">
@@ -89,7 +100,7 @@ const landing = `
     <section class="section dark-section" aria-labelledby="preview-title">
       <div class="section-inner">
         <div class="section-intro">
-          <p class="eyebrow">Recorded from the real CLI</p>
+          <p class="eyebrow">Recorded from the bundled CLI</p>
           <h2 id="preview-title">See the failed rows before upload</h2>
           <p>The sample replay transforms five customers and writes four review files. It catches three source errors.</p>
         </div>
@@ -139,7 +150,7 @@ $ import-mapping-replay demo</pre></div>
           <p class="eyebrow">Optional team kit</p>
           <h2 id="price-title">Standardise the review handoff</h2>
           <p>The core CLI needs no license. The team kit adds mapping recipes and a sign-off checklist.</p>
-          <ul class="plain-list"><li>Five mapping recipes for common template fields.</li><li>A review checklist with owner and approval fields.</li></ul>
+          <ul class="plain-list"><li>Five named mapping recipes for common template fields.</li><li>A review checklist with upload owner and second-engineer approval fields.</li></ul>
         </div>
         <div class="price-ticket">
           <h3>Team mapping kit</h3>
@@ -160,21 +171,22 @@ $ import-mapping-replay demo</pre></div>
   </main>
   ${footer}`;
 
-const demo = `
+const demo = (fixed = false) => `
   <div class="demo-banner" role="status"><span>Demo — sample data, nothing is saved</span><button id="reset-demo" type="button">Reset demo</button><a href="/#install" data-link>Start for real</a></div>
   ${header('/demo')}
-  <main id="main" tabindex="-1" class="content-page">
-    <section class="page-hero">
+  <main id="main" tabindex="-1" class="content-page demo-page">
+    <section class="page-hero demo-hero">
       <div class="section-inner">
-        <p class="eyebrow">Five sample customers</p>
+        <p class="eyebrow">Five sample customers · three errors</p>
         <h1 id="page-title" tabindex="-1">Review a finished CSV replay</h1>
-        <p class="lede">This isolated sample shows transformed rows, three validation errors, and every review file.</p>
+        <p class="lede">Inspect one mapped value and fix a sample error. Nothing is saved.</p>
+        ${demoSnapshot(fixed)}
       </div>
     </section>
     <section class="section demo-workspace" aria-labelledby="result-title">
       <div class="section-inner">
         <h2 id="result-title" tabindex="-1">The replay needs review</h2>
-        <div class="demo-summary"><div><strong>5</strong><span>source rows</span></div><div><strong>4</strong><span>mapped fields</span></div><div><strong>3</strong><span>errors found</span></div></div>
+        <div class="demo-summary"><div><strong>5</strong><span>source rows</span></div><div><strong>4</strong><span>mapped fields</span></div><div><strong id="demo-error-count">${fixed ? '2' : '3'}</strong><span>errors found</span></div></div>
         <div class="section-intro"><h3>Validation results</h3><p>Fix these source values, then run the same mapping again.</p></div>
         <table class="issue-table">
           <thead><tr><th>Source row</th><th>Field</th><th>Value</th><th>What to fix</th></tr></thead>
@@ -222,7 +234,7 @@ const notFound = `
 
 const routeData: Record<Route, { html: string; title: string; description: string; canonical: string }> = {
   '/': { html: landing, title: 'Import Mapping Replay — replay CSV imports', description: 'Replay customer CSV imports into a reviewed output file and error report before upload.', canonical: '/' },
-  '/demo': { html: demo, title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay, three validation errors, and four output files.', canonical: '/demo' },
+  '/demo': { html: demo(), title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay, three validation errors, and four output files.', canonical: '/demo' },
   '/privacy': { html: privacy, title: 'Privacy — Import Mapping Replay', description: 'Read how the local CLI handles CSV files and how the website stores a team kit license.', canonical: '/privacy' },
   '/terms': { html: terms, title: 'Terms — Import Mapping Replay', description: 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', canonical: '/terms' },
   '/404': { html: notFound, title: 'Page not found — Import Mapping Replay', description: 'The requested Import Mapping Replay page was not found.', canonical: '/404' },
@@ -256,8 +268,18 @@ function replayTerminal(): void {
 function downloadKit(): void {
   const kit = {
     schema: 'import-mapping-replay/team-kit/v1',
-    review: ['Confirm source hash', 'Resolve validation errors', 'Ask a second engineer to approve', 'Record upload owner'],
-    recipes: ['email-normalisation', 'iso-date', 'plan-enum', 'stable-external-id', 'blank-default'],
+    recipes: [
+      { id: 'email-normalisation', name: 'Normalize email', fields: ['Email'], steps: ['Trim', 'Lowercase', 'Email validation'] },
+      { id: 'iso-date', name: 'Format ISO date', fields: ['Start date'], steps: ['Parse date', 'Format YYYY-MM-DD'] },
+      { id: 'plan-enum', name: 'Check plan values', fields: ['Plan'], steps: ['Trim', 'Allow starter, growth, enterprise'] },
+      { id: 'stable-external-id', name: 'Protect external IDs', fields: ['Customer ID'], steps: ['Trim', 'Check uniqueness'] },
+      { id: 'blank-default', name: 'Fill blank defaults', fields: ['Region'], steps: ['Apply default when blank'] },
+    ],
+    review: {
+      owner: { label: 'Upload owner', value: '' },
+      approval: { label: 'Second engineer approval', value: '' },
+      checks: ['Confirm source hash', 'Resolve validation errors', 'Record approval before upload'],
+    },
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(kit, null, 2)], { type: 'application/json' }));
   const link = document.createElement('a');
@@ -320,10 +342,9 @@ function bindPage(): void {
     });
   });
   document.querySelector('#replay-terminal')?.addEventListener('click', replayTerminal);
+  document.querySelector('#apply-sample-fix')?.addEventListener('click', () => setDemoState(true));
   document.querySelector('#reset-demo')?.addEventListener('click', () => {
-    stopTerminal();
-    const output = document.querySelector<HTMLElement>('#terminal-output');
-    if (output) output.innerHTML = sampleTranscript;
+    setDemoState(false);
     document.querySelector<HTMLElement>('#result-title')?.focus();
   });
   document.querySelector('#license-form')?.addEventListener('submit', (event) => {
@@ -339,6 +360,17 @@ function bindPage(): void {
     const stored = localStorage.getItem(LICENSE_KEY);
     if (stored) void verifyLicense(stored);
   }
+}
+
+function setDemoState(fixed: boolean): void {
+  if (currentRoute() !== '/demo') return;
+  const snapshot = document.querySelector<HTMLElement>('.demo-snapshot');
+  if (snapshot) snapshot.outerHTML = demoSnapshot(fixed);
+  const count = document.querySelector<HTMLElement>('#demo-error-count');
+  if (count) count.textContent = fixed ? '2' : '3';
+  const output = document.querySelector<HTMLElement>('#terminal-output');
+  if (output) output.innerHTML = sampleTranscript;
+  document.querySelector('#apply-sample-fix')?.addEventListener('click', () => setDemoState(true));
 }
 
 function updateMeta(name: string, content: string): void {
