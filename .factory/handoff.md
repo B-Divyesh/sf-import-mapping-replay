@@ -91,8 +91,37 @@ Browser, accessibility, privacy, and response checks:
 
 ## Deployment
 
-Deployment and live verification evidence will be appended after the committed
-repair is pushed through the static deployment configuration.
+Committed and pushed repair `f245447` with:
+
+```sh
+/opt/fleet/lib/deploy-static.sh import-mapping-replay dist/site
+```
+
+Azure Static Web Apps deployment `4cdd749c-1818-4c74-b234-652f551e82bb`
+succeeded to `kind-smoke-02196aa10.7.azurestaticapps.net`; the configured
+`import-mapping-replay.sociobot.in` custom domain was Ready and returned HTTPS
+200 after the upload.
+
+Live `/` and `/demo` passed `verify-url.sh` with no console/page errors and the
+same title, language, landmark, heading, and image-alt results as local. The
+live keyboard correction and privacy check passed at 1440 x 900 and 390 x 844:
+the count and rows became two, the stale value disappeared, the completed
+button was disabled, focus moved to the live result, no overflow occurred, no
+browser storage was created, and only same-origin requests occurred.
+
+Live identity SHA-256 values matched the final local build:
+
+- `assets/main-SvAbbRFQ.js`:
+  `ef7360ca0d8a7e470decd16febd9c34531aedb5d932d50e2ab4f6311f4873915`
+- `assets/main-CP8GCJAy.css`:
+  `a62a32c367b4566de19f9e66091f7b83d9fba9141c866c380f26492f78ea0604`
+- `demo.html`:
+  `f284f56a888026910ec169b7c8597ef940fce9be65a20cd8a6d9bda42505d49f`
+
+Production responses include HSTS, the configured CSP, `nosniff`, strict
+referrer policy, restrictive permissions policy, 30-second HTML caching, and
+one-year immutable asset caching. An unknown route returns HTTP 404. Fresh GET
+and HEAD checkout requests still return HTTP 303 to Dodo through Sociobot.
 
 ## Known gaps / next steps
 
