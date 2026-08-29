@@ -1,57 +1,85 @@
-# Adversarial review 6 handoff — FAIL
+# Polish round 6 handoff — PASS
 
 Completed 29 August 2026 for work order
-`import-mapping-replay-review-6` against candidate
-`4a2aedfdb1901ff7b42379f59ab4c83ed1951dd4` and live
-<https://import-mapping-replay.sociobot.in>.
+`import-mapping-replay-polish-6` against repair commit
+`72a4f0d812aa2fa0a4c0ae4360926ccd21fa9f2d`.
 
-The full report is `.factory/review-6.md`. Verdict: **FAIL** with one medium
-finding and no blocking finding. The landing page's dynamic sentence **“Using
-the last valid check while verification is unavailable”** keeps the paid team
-kit download available after a failed recheck, but this outcome has no
-`claims.json` entry or tagged test.
+Live site: <https://import-mapping-replay.sociobot.in>
 
-## What was done
+Verdict: **PASS — no known finding remains.** The Rust CLI and static Vite
+deployment class are unchanged.
 
-- Re-ran the cold first read at 390 × 844 and 1440 × 900.
-- Audited every landing and README sentence, heading, label, action, and
-  dynamic state for length, plain language, terminology, and claim coverage.
-- Exercised the one-click web demo, correction, Reset, direct demo storage,
-  same-origin request boundary, and the pending-license-to-demo race.
-- Ran the release CLI demo from a temporary directory.
-- Ran all 28 exact claim commands independently from a fresh clone.
-- Rechecked every finding from reviews 1–5 against live behavior and current
-  source/tests.
-- Checked route status and metadata, Back/focus behavior, all links, mobile
-  targets and overflow, Axe, security/static assets, visual identity, and the
-  factory URL verifier.
-- Confirmed the live index and JavaScript byte-match the clean production
-  build.
+## What changed
 
-No product code was modified.
+- Registered `license-unavailable-fallback` and added its single observable
+  browser test. An aged valid result now has explicit evidence that an HTTP 503
+  recheck preserves the cached verdict and keeps the team kit available.
+- Made **Try it with sample data** open `/?demo=1` directly. `/demo` remains a
+  real, reload-safe route. Both paths use the isolated in-memory sample with
+  its persistent banner, Reset demo, and Start for real controls.
+- Updated the demo documentation, copy audit, live audit, and the 77-character
+  verb-first catalog description.
+- Re-ran every earlier finding and retained the transit-poster visual system.
 
-## Verification results
+The complete finding-to-change-to-evidence map is `.factory/polish-6.md`.
 
-- Claims: 28/28 listed commands passed independently.
-- `npm test`: 7 Rust tests and 66 Playwright tests passed; 2 intentional skips.
+## Exact verification evidence
+
+Clean clone: `/tmp/import-mapping-replay-polish6-clean.tBuhoF/repo` at
+`72a4f0d812aa2fa0a4c0ae4360926ccd21fa9f2d`.
+
+- `npm ci`: passed with zero vulnerabilities.
+- Every exact command in `.factory/claims.json`: 29/29 passed independently.
+- `npm test`: 7 Rust tests and 68 Playwright tests passed; 2 intentional
+  browser-project skips.
 - `npm run typecheck`: passed.
 - `cargo fmt --check`: passed.
 - `cargo clippy --all-targets -- -D warnings`: passed.
-- `cargo package`: passed.
-- `npm run build`: passed; `dist/site` created.
-- Live Axe: zero violations across desktop/mobile route checks.
-- Factory URL verifier: passed with no console or structural errors.
-- Live link crawl: no dead links; checkout returned 303 to Dodo Payments.
-- Demo request log: same-origin document, JavaScript, and CSS only; real
-  storage sentinels remained byte-identical.
+- `cargo package`: passed and verified the crate.
+- `npm run build`: passed; release binary and `dist/site` were created.
+- Bundle: JavaScript 22.56 kB raw / 7.22 kB gzip; CSS 13.10 kB raw / 3.67 kB
+  gzip.
 
-Evidence generated during the run is under ignored path
-`.factory/evidence/review-6/`. The clean clone was
-`/tmp/import-mapping-replay-review6.mJSSfA/repo`.
+Deployment `a7360fe1-bcb4-4513-b18e-babd31dce877` used the work-order static
+configuration: `npm ci && npm run build:site`, then deployment of `dist/site`.
 
-## What remains
+- `/opt/fleet/lib/verify-url.sh`: passed with no console errors, one h1,
+  `lang=en`, a main landmark, complete alt text, and labeled buttons.
+- `node tests/live-audit.mjs`: passed in new 1440 × 900 and 390 × 844 browser
+  contexts. Six routes per size had zero Axe violations and no overflow.
+- `/?demo=1`: same-origin requests only; Reset restored three errors and result
+  focus; both real-storage sentinels remained byte-identical.
+- Landing-to-demo race: the held verification was aborted, no verdict was
+  written, and no cross-origin request remained active.
+- Cached-license outage: one recorded HTTP 503 left the aged valid verdict
+  unchanged, showed the tested status, and kept Download team kit visible.
+- Routing: `/`, `/demo`, `/privacy`, and `/terms` returned 200. `/404` and two
+  fresh unknown paths returned the designed page with HTTP 404.
+- Every rendered link resolved. Checkout returned 303 to
+  `checkout.dodopayments.com`.
+- Live index and JavaScript SHA-256 values matched the deployed build exactly.
+- Live Lighthouse: Performance 100, Accessibility 100, Best Practices 100,
+  SEO 100; LCP 1.8 s, CLS 0, TBT 20 ms, transfer 194 KiB.
 
-Resolve F-6-1. Register the cached-valid verification-outage behavior and add
-one tagged outcome test, or hide the paid download on verification failure and
-remove the continued-access promise. PASS still requires a fresh zero-finding
-review.
+Evidence: `.factory/evidence/polish-6/live/verify.json`,
+`.factory/evidence/polish-6/live/cold-audit.json`,
+`.factory/evidence/polish-6/live/lighthouse.json`, and the cold screenshots in
+that directory.
+
+## Run and verify
+
+```sh
+npm ci
+npm test
+npm run typecheck
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo package
+npm run build
+node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/live
+```
+
+## Known gaps and next steps
+
+None. Registry publication remains a factory release action; the crate is
+packaged and verified but does not claim that a packaged release exists.
