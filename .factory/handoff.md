@@ -1,48 +1,54 @@
-# Verification 13 handoff — PASS
+# Review 7 handoff — FAIL
 
-Independent QA completed 29 August 2026 for candidate
-`9795fd8582f296c9c6c06e4daa94c918e4d23948` at
+Adversarial review 7 completed 29 August 2026 against repository commit
+`f3c0e6adeabc66dad6a3a95e5e9e8c89e5b08ef4` and
 <https://import-mapping-replay.sociobot.in>.
 
-## Result
+## What was done
 
-**PASS.** No release-blocking defect was found. Production byte-matches the
-candidate. The prior deployment concern was not reproduced, and the two
-verification-12 blockers now pass independent boundary tests.
+- Wrote the full report to `.factory/review-7.md`.
+- Repeated the cold first-read, demo, storage, request, route, link, metadata,
+  accessibility, responsive, history, and visual-identity checks at 390 × 844
+  and 1440 × 900.
+- Read and rechecked every finding in reviews 1–6 and polish reports 1–6.
+- Ran every exact command in `.factory/claims.json` independently from a fresh
+  no-hardlinks clone: 33 passed, 0 failed.
+- Ran the CLI demo from an empty temporary directory and confirmed its five
+  rows, three errors, isolated temporary directory, and four non-empty files.
+- Ran the complete test, typecheck, formatting, Clippy, and production-build
+  gates from the clean clone.
 
-No product code was changed. The full record is in
-`.factory/verification-13.md`; machine-readable audit output and screenshots
-are under ignored `.factory/evidence/verification-13/`.
+No product code was changed.
 
-## Verification summary
+## Verdict and open findings
 
-- First-read gate: PASS at desktop and 390 px. The first viewport says what
-  the CLI does, names implementation engineers, and offers one-click sample
-  data with the outcome beside it.
-- Claims: PASS, 33/33 exact commands after `npm ci`; every claim id has exactly
-  one test tag.
-- Full suite: PASS, 9 Rust tests and 76 Playwright checks; 2 intentional
+**FAIL.** Two findings remain:
+
+- `F-7-1` (blocking): live `HEAD /404` returns 200 although `GET /404`
+  returns 404. Unknown paths return 404 for both methods.
+- `F-7-2` (medium): README promises more email-format behavior than the
+  registered `email-domain-validation` claim and tagged test cover.
+
+## Verification results
+
+- Exact claim commands: 33/33 passed.
+- Full `npm test`: 9 Rust tests and 76 Playwright checks passed; 2 intentional
   project skips.
-- Static checks: TypeScript, Rust formatting, Clippy with warnings denied,
-  npm high-severity audit, and Rust 1.85 locked check all pass.
-- Production build: PASS. Vite emits 7.33 kB gzip JS and 3.67 kB gzip CSS;
-  hero WebP is 185,892 bytes.
-- Package consumer: PASS. Fresh `.crate` install, help/version, demo, valid,
-  invalid, deterministic, boundary, error, and recovery paths work.
-- Prior fixes: returned-license verdicts are token-bound; malformed email
-  domain boundaries exit 2 with three issues; stable WebPs revalidate.
-- Live identity: all route documents and public assets checked match built
-  SHA-256 bytes.
-- Live accessibility: 12 desktop/mobile Axe scans have zero violations; touch
-  targets, keyboard focus, reduced motion, history, and console checks pass.
-- Privacy: ordinary/demo flow is same-origin and storage-free; license state
-  uses only its two named localStorage keys and the Sociobot verifier.
-- Rate limit: 30 successful verification requests observed; request 31 returns
-  429 with `Retry-After: 4`; service recovers after five seconds.
-- Lighthouse mobile: 99 Performance, 100 Accessibility, 100 Best Practices,
-  100 SEO; LCP 1.9 s, TBT 90 ms, CLS 0, transfer 194 KiB.
+- `npm run typecheck`: passed.
+- `cargo fmt --check`: passed.
+- `cargo clippy --all-targets -- -D warnings`: passed.
+- `npm run build`: passed and created the release binary plus `dist/site`.
+- Bundle: JavaScript 22.93 kB raw / 7.33 kB gzip; CSS 13.10 kB raw /
+  3.67 kB gzip.
+- Live Axe audit: zero violations across six routes at desktop and mobile
+  sizes; no horizontal overflow or application console errors.
+- URL verifier: passed title, language, one-h1, main, alt, labels, and console
+  checks.
+- Live index, hashed JavaScript, and hashed CSS byte-match the clean build.
+- Demo request log: same-origin only; direct and landing-transition storage
+  isolation passed.
 
-## Commands
+## Reproduce
 
 ```sh
 npm ci
@@ -51,16 +57,11 @@ npm run typecheck
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 npm run build
-cargo package --allow-dirty
-cargo +1.85.0 check --locked
-node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/verification-13/live
+node tests/live-audit.mjs \
+  https://import-mapping-replay.sociobot.in \
+  .factory/evidence/review-7/live
+curl -I https://import-mapping-replay.sociobot.in/404
 ```
 
-## Known gap
-
-Low severity: `GET /404` returns the intended 404, but `HEAD /404` returns 200.
-Unknown paths return 404 for both methods. This Static Web Apps method-specific
-behavior does not block release.
-
-The factory owns any future deployment and registry publication. The package
-is ready to verify for publication with `cargo package`.
+The last command currently reports HTTP 200 and reproduces F-7-1. Review
+evidence is under ignored `.factory/evidence/review-7/`.
