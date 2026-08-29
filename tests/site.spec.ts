@@ -149,9 +149,9 @@ test('@claim:demo-temp concurrent CLI demos each receive an isolated temporary d
     expect(directory).toContain('import-mapping-replay-demo-');
     expect(existsSync(join(directory, 'customers.csv'))).toBe(true);
     expect(existsSync(join(directory, 'mapping.json'))).toBe(true);
-    for (const artifact of [result.output_csv, result.evidence, result.validation, result.rollback_manifest]) {
-      expect(existsSync(String(artifact))).toBe(true);
-      expect(readFileSync(String(artifact), 'utf8').trim()).not.toBe('');
+    for (const reviewFile of [result.output_csv, result.evidence, result.validation, result.rollback_manifest]) {
+      expect(existsSync(String(reviewFile))).toBe(true);
+      expect(readFileSync(String(reviewFile), 'utf8').trim()).not.toBe('');
     }
     expect(readFileSync(String(result.output_csv), 'utf8').trim().split('\n')).toHaveLength(6);
     expect(JSON.parse(readFileSync(String(result.evidence), 'utf8'))).toMatchObject({ source_rows: 5, output_rows: 5 });
@@ -194,7 +194,7 @@ test('@claim:rollback-local-scope rollback manifest writes only inside the chose
   expect(readdirSync(output).sort()).toEqual(['evidence.json', 'output.csv', 'rollback-manifest.json', 'validation.json']);
   const rollback = JSON.parse(readFileSync(join(output, 'rollback-manifest.json'), 'utf8'));
   expect(rollback.purpose).toContain('local transformation');
-  expect(rollback.warning).toContain('cannot undo records');
+  expect(rollback.warning).toBe('This file cannot undo records already imported into a customer system.');
   expect(existsSync(guard.log) ? readFileSync(guard.log, 'utf8') : '').toBe('');
 });
 
@@ -377,7 +377,7 @@ test('@claim:source-unchanged rejects an output path that resolves to the source
   const sourceError = JSON.parse(result.stdout);
   expect(sourceError.status).toBe('error');
   expect(sourceError.error).toContain('source CSV');
-  expect(sourceError.error).toContain('resolves to output artifact');
+  expect(sourceError.error).toContain('resolves to review file');
   expect(sourceError.error).toContain('choose another --out-dir');
   expect(readFileSync(source)).toEqual(before);
   expect(readdirSync(root).sort()).toEqual(['mapping.json', 'output.csv']);
@@ -393,12 +393,12 @@ test('@claim:source-unchanged rejects an output path that resolves to the source
   ], { encoding: 'utf8' });
   expect(mappingResult.status).toBe(1);
   expect(mappingResult.stderr).toContain('mapping');
-  expect(mappingResult.stderr).toContain('resolves to output artifact');
+  expect(mappingResult.stderr).toContain('resolves to review file');
   expect(readFileSync(collidingMapping)).toEqual(mappingBefore);
   expect(readdirSync(mappingRoot).sort()).toEqual(['evidence.json', 'source.csv']);
 });
 
-test('@claim:atomic-artifacts malformed later rows publish no partial artifacts and preserve a complete replay', async () => {
+test('@claim:atomic-review-files malformed later rows publish no partial review files and preserve a complete replay', async () => {
   const root = mkdtempSync(join(tmpdir(), 'replay-atomic-'));
   const source = join(root, 'source.csv');
   const output = join(root, 'out');
@@ -544,19 +544,32 @@ test('purchase copy keeps only the checkout behavior covered by evidence', async
 
 test('documentation and page copy retain every reviewed wording correction', async ({ page }) => {
   const readme = readFileSync(resolve('README.md'), 'utf8');
+  const claims = JSON.parse(readFileSync(resolve('.factory/claims.json'), 'utf8')) as Array<{ id: string; claim: string; test: string }>;
   expect(readme).toContain('## Run a CSV replay');
   expect(readme).toContain('Install from this source checkout');
   expect(readme).toContain('Run `cargo package` to check the release archive.');
   expect(readme).toContain('`npm run build` creates the release binary and the static site in `dist/site`.');
   expect(readme).toContain('Production site: <https://import-mapping-replay.sociobot.in>');
   expect(readme).toContain('MIT. See [LICENSE](LICENSE).');
-  expect(readme).toContain('customer system');
+  expect(readme).toContain('It does not connect to or undo records in a customer system.');
+  expect(readme).toContain('It cannot undo records already uploaded to a customer system.');
+  expect(readme).toContain('It runs the replay and prints every review file path.');
+  expect(readme).toContain('The CLI rejects a source or mapping that resolves to a review file.');
+  expect(readme).toContain('It builds all four review files in a staging directory and publishes them only after the replay succeeds.');
+  expect(readme).toContain('A malformed later row publishes no partial review files.');
+  expect(readme).toContain('a failed rerun leaves all four review files unchanged.');
   expect(readme).not.toContain('The factory publishes releases.');
   expect(readme).not.toContain('ready for registry review');
   expect(readme).not.toContain('SaaS account');
+  expect(readme).not.toMatch(/another product|imported elsewhere|output artifact|all four artifacts|partial artifact|all four prior files/i);
+  expect(claims.find(claim => claim.id === 'rollback-local-scope')?.claim).toBe('The rollback manifest preserves local source rows and does not change a customer system.');
+  expect(claims.find(claim => claim.id === 'atomic-review-files')).toMatchObject({
+    claim: 'A malformed later CSV row publishes no partial review files and leaves all review files from any previous complete replay unchanged.',
+  });
+  expect(claims.some(claim => claim.id === 'atomic-artifacts')).toBe(false);
 
   const catalog = readFileSync(resolve('.factory/catalog-description.txt'), 'utf8').trim();
-  expect(catalog).toBe('Replay customer CSV imports before upload with reviewed evidence and validation reports.');
+  expect(catalog).toBe('Replay customer CSV imports and inspect mapped values, errors, and source rows.');
   expect(catalog.length).toBeLessThanOrEqual(120);
 
   await page.goto('/');
@@ -566,11 +579,19 @@ test('documentation and page copy retain every reviewed wording correction', asy
     'What the CLI does not do',
     'Show the sample replay again',
     'It does not connect to a customer system.',
+    'A rollback manifest cannot undo records imported into a customer system.',
     'Five named mapping recipes for common template fields.',
     'A review checklist with upload owner and second-engineer approval fields.',
   ]) {
     await expect(page.getByText(text, { exact: true })).toBeVisible();
   }
+  const landingCopy = await page.locator('body').innerText();
+
+  await page.goto('/terms');
+  await expect(page.getByText('Review every result before sending data to a customer system.', { exact: true })).toBeVisible();
+  await expect(page.getByText('It cannot delete or change records in a customer system.', { exact: false })).toBeVisible();
+  const publishedCopy = `${readme}\n${landingCopy}\n${await page.locator('body').innerText()}`;
+  expect(publishedCopy).not.toMatch(/another product|imported elsewhere|output artifact|all four artifacts|partial artifact|all four prior files/i);
 });
 
 test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {
@@ -789,7 +810,7 @@ test('desktop hero keeps all three product facts in the first viewport', async (
 test('all routes set specific metadata and unknown routes return HTTP 404', async ({ page, request }) => {
   const expected = [
     ['/', 'Import Mapping Replay — replay CSV imports', 'Replay customer CSV imports into a reviewed output file and error report before upload.', 'https://import-mapping-replay.sociobot.in/'],
-    ['/demo', 'Demo — Import Mapping Replay', 'Review the bundled customer CSV replay, three validation errors, and four output files.', 'https://import-mapping-replay.sociobot.in/demo'],
+    ['/demo', 'Demo — Import Mapping Replay', 'Review the bundled customer CSV replay, three validation errors, and four review files.', 'https://import-mapping-replay.sociobot.in/demo'],
     ['/privacy', 'Privacy — Import Mapping Replay', 'Read how the local CLI handles CSV files and how the website stores a team kit license.', 'https://import-mapping-replay.sociobot.in/privacy'],
     ['/terms', 'Terms — Import Mapping Replay', 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', 'https://import-mapping-replay.sociobot.in/terms'],
   ];

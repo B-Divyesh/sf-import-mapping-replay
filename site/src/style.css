@@ -79,11 +79,11 @@ h3 { font-size: 20px; }
 .terminal .ok { color: #8fd5b5; }
 .terminal-controls { display: flex; justify-content: flex-end; gap: 12px; padding: 0 16px 16px; }
 .terminal-controls button { border: 1px solid var(--brass); color: var(--paper-light); background: transparent; cursor: pointer; padding: 8px 16px; }
-.artifact-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--brass); border-top: 0; }
-.artifact-strip div { min-width: 0; padding: 16px; border-right: 1px solid var(--brass); color: var(--paper-light); background: #13262d; }
-.artifact-strip div:last-child { border: 0; }
-.artifact-strip strong { display: block; font: 15px var(--mono); overflow-wrap: anywhere; }
-.artifact-strip span { color: #c6b89e; font-size: 13px; }
+.review-file-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--brass); border-top: 0; }
+.review-file-strip div { min-width: 0; padding: 16px; border-right: 1px solid var(--brass); color: var(--paper-light); background: #13262d; }
+.review-file-strip div:last-child { border: 0; }
+.review-file-strip strong { display: block; font: 15px var(--mono); overflow-wrap: anywhere; }
+.review-file-strip span { color: #c6b89e; font-size: 13px; }
 
 .route-steps { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; list-style: none; padding: 0; }
 .route-steps::before { content: ""; position: absolute; top: 24px; left: 16%; right: 16%; height: 5px; background: var(--brass); transform-origin: left; animation: draw-line 650ms ease-out both; }
@@ -167,9 +167,9 @@ h3 { font-size: 20px; }
   .step-number { position: absolute; left: 0; }
   @keyframes draw-vertical { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   .limits-grid, .price-grid { grid-template-columns: 1fr; gap: 36px; }
-  .artifact-strip { grid-template-columns: 1fr 1fr; }
-  .artifact-strip div:nth-child(2) { border-right: 0; }
-  .artifact-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--brass); }
+  .review-file-strip { grid-template-columns: 1fr 1fr; }
+  .review-file-strip div:nth-child(2) { border-right: 0; }
+  .review-file-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--brass); }
   .terminal pre { min-height: 400px; padding: 18px; font-size: 12px; }
   .demo-banner { flex-wrap: wrap; gap: 8px; }
   .demo-hero { padding: 12px 0 16px; }

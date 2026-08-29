@@ -209,7 +209,7 @@ fn validate_mapping(mapping: &Mapping) -> Result<()> {
     Ok(())
 }
 
-const ARTIFACT_NAMES: [&str; 4] = [
+const REVIEW_FILE_NAMES: [&str; 4] = [
     "output.csv",
     "evidence.json",
     "validation.json",
@@ -266,7 +266,7 @@ fn validate_output_paths(source: &Path, mapping_path: &Path, out_dir: &Path) -> 
     let canonical_out_dir = fs::canonicalize(out_dir)
         .with_context(|| format!("could not resolve output directory {}", out_dir.display()))?;
 
-    for name in ARTIFACT_NAMES {
+    for name in REVIEW_FILE_NAMES {
         let output = canonical_out_dir.join(name);
         for (input_name, input) in [
             ("source CSV", canonical_source.as_path()),
@@ -276,14 +276,14 @@ fn validate_output_paths(source: &Path, mapping_path: &Path, out_dir: &Path) -> 
                 || (output.exists()
                     && same_file::is_same_file(input, &output).with_context(|| {
                         format!(
-                            "could not compare {input_name} {} with output artifact {}",
+                            "could not compare {input_name} {} with review file {}",
                             input.display(),
                             output.display()
                         )
                     })?);
             if collides {
                 bail!(
-                    "{input_name} {} resolves to output artifact {}; choose another --out-dir",
+                    "{input_name} {} resolves to review file {}; choose another --out-dir",
                     input.display(),
                     output.display()
                 );
@@ -294,7 +294,7 @@ fn validate_output_paths(source: &Path, mapping_path: &Path, out_dir: &Path) -> 
             .is_ok_and(|metadata| metadata.file_type().is_dir())
         {
             bail!(
-                "output artifact {} is a directory; move it or choose another --out-dir",
+                "review file {} is a directory; move it or choose another --out-dir",
                 output.display()
             );
         }
@@ -327,15 +327,15 @@ fn restore_backups(out_dir: &Path, backup_dir: &Path, names: &[&str]) -> Result<
     Ok(())
 }
 
-fn publish_artifacts(out_dir: &Path, artifacts: &[(&str, Vec<u8>)]) -> Result<()> {
+fn publish_review_files(out_dir: &Path, review_files: &[(&str, Vec<u8>)]) -> Result<()> {
     let stage = Workspace::create(out_dir, "stage")?;
-    for (name, bytes) in artifacts {
+    for (name, bytes) in review_files {
         write_staged(&stage.path.join(name), bytes)?;
     }
 
     let backup = Workspace::create(out_dir, "backup")?;
     let mut backed_up = Vec::new();
-    for (name, _) in artifacts {
+    for (name, _) in review_files {
         let target = out_dir.join(name);
         if target.symlink_metadata().is_ok() {
             if let Err(error) = fs::rename(&target, backup.path.join(name)) {
@@ -348,7 +348,7 @@ fn publish_artifacts(out_dir: &Path, artifacts: &[(&str, Vec<u8>)]) -> Result<()
     }
 
     let mut published = Vec::new();
-    for (name, _) in artifacts {
+    for (name, _) in review_files {
         let target = out_dir.join(name);
         if let Err(error) = fs::rename(stage.path.join(name), &target) {
             for published_name in published.iter().rev() {
@@ -563,7 +563,7 @@ pub fn run_replay(
     let rollback_bytes = serde_json::to_vec_pretty(&RollbackManifest {
         schema: "import-mapping-replay/rollback/v1",
         purpose: "Reconstruct the source rows used by this local transformation.",
-        warning: "This file cannot undo records already imported into another product.",
+        warning: "This file cannot undo records already imported into a customer system.",
         source_file: source
             .file_name()
             .unwrap_or_default()
@@ -575,21 +575,21 @@ pub fn run_replay(
         rows: &source_rows,
     })?;
 
-    publish_artifacts(
+    publish_review_files(
         out_dir,
         &[
-            (ARTIFACT_NAMES[0], output_bytes),
-            (ARTIFACT_NAMES[1], evidence_bytes),
-            (ARTIFACT_NAMES[2], validation_bytes),
-            (ARTIFACT_NAMES[3], rollback_bytes),
+            (REVIEW_FILE_NAMES[0], output_bytes),
+            (REVIEW_FILE_NAMES[1], evidence_bytes),
+            (REVIEW_FILE_NAMES[2], validation_bytes),
+            (REVIEW_FILE_NAMES[3], rollback_bytes),
         ],
     )?;
 
     Ok(RunReport {
-        output_csv: out_dir.join(ARTIFACT_NAMES[0]),
-        evidence: out_dir.join(ARTIFACT_NAMES[1]),
-        validation: out_dir.join(ARTIFACT_NAMES[2]),
-        rollback_manifest: out_dir.join(ARTIFACT_NAMES[3]),
+        output_csv: out_dir.join(REVIEW_FILE_NAMES[0]),
+        evidence: out_dir.join(REVIEW_FILE_NAMES[1]),
+        validation: out_dir.join(REVIEW_FILE_NAMES[2]),
+        rollback_manifest: out_dir.join(REVIEW_FILE_NAMES[3]),
         rows: source_rows.len(),
         validation_errors: issues.len(),
     })
@@ -684,7 +684,7 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_headers_are_rejected_before_artifacts_are_published() {
+    fn duplicate_headers_are_rejected_before_review_files_are_published() {
         let dir = tempdir().unwrap();
         let source = dir.path().join("duplicate.csv");
         let mapping = dir.path().join("mapping.json");
@@ -719,7 +719,7 @@ mod tests {
             .to_string();
 
         assert!(error.contains("source CSV"));
-        assert!(error.contains("resolves to output artifact"));
+        assert!(error.contains("resolves to review file"));
         assert!(error.contains("choose another --out-dir"));
         assert_eq!(fs::read(&source).unwrap(), before);
         assert!(!dir.path().join("evidence.json").exists());
@@ -741,7 +741,7 @@ mod tests {
             .to_string();
 
         assert!(error.contains("mapping"));
-        assert!(error.contains("resolves to output artifact"));
+        assert!(error.contains("resolves to review file"));
         assert_eq!(fs::read(&mapping).unwrap(), before);
         assert!(!dir.path().join("output.csv").exists());
         assert!(!dir.path().join("validation.json").exists());
@@ -749,7 +749,7 @@ mod tests {
     }
 
     #[test]
-    fn malformed_later_row_publishes_no_artifacts() {
+    fn malformed_later_row_publishes_no_review_files() {
         let dir = tempdir().unwrap();
         let source = dir.path().join("source.csv");
         fs::write(
@@ -764,7 +764,7 @@ mod tests {
             .to_string();
 
         assert!(error.contains("source CSV row 3 is malformed"));
-        for name in ARTIFACT_NAMES {
+        for name in REVIEW_FILE_NAMES {
             assert!(!output.join(name).exists(), "{name} must not be published");
         }
     }
@@ -780,7 +780,7 @@ mod tests {
             3,
         )
         .unwrap();
-        let before = ARTIFACT_NAMES.map(|name| (name, fs::read(output.join(name)).unwrap()));
+        let before = REVIEW_FILE_NAMES.map(|name| (name, fs::read(output.join(name)).unwrap()));
         let malformed = dir.path().join("malformed.csv");
         fs::write(
             &malformed,

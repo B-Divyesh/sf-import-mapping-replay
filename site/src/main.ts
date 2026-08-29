@@ -83,7 +83,7 @@ const terminal = (controls = true) => `
     <pre id="terminal-output">${sampleTranscript}</pre>
     ${controls ? '<div class="terminal-controls"><button id="replay-terminal" type="button">Show the sample replay again</button></div>' : ''}
   </div>
-  <div class="artifact-strip" aria-label="Files written by the sample run">
+  <div class="review-file-strip" aria-label="Review files written by the sample run">
     <div><strong>output.csv</strong><span>Mapped rows</span></div>
     <div><strong>evidence.json</strong><span>Before and after</span></div>
     <div><strong>validation.json</strong><span>Three issues</span></div>
@@ -155,7 +155,7 @@ $ import-mapping-replay demo</pre></div>
             <li>It does not connect to a customer system.</li>
             <li>It processes a source CSV when you run the command.</li>
             <li>It does not change a source CSV.</li>
-            <li>A rollback manifest cannot undo records imported elsewhere.</li>
+            <li>A rollback manifest cannot undo records imported into a customer system.</li>
           </ul>
           <p class="notice">Keep the source CSV, mapping, and review files together for each customer upload.</p>
         </div>
@@ -233,10 +233,10 @@ const privacy = `
 const terms = `
   ${header('/terms')}
   <main id="main" tabindex="-1" class="content-page">
-    <section class="page-hero"><div class="section-inner"><p class="eyebrow">Terms</p><h1 id="page-title" tabindex="-1">Use replay files before uploading</h1><p class="lede">Review every result before sending data to another product.</p></div></section>
+    <section class="page-hero"><div class="section-inner"><p class="eyebrow">Terms</p><h1 id="page-title" tabindex="-1">Use replay files before uploading</h1><p class="lede">Review every result before sending data to a customer system.</p></div></section>
     <section class="section"><div class="section-inner prose">
       <h2>Local utility</h2><p>Import Mapping Replay transforms files you provide. You remain responsible for the source data, mapping, and final upload.</p>
-      <h2>Rollback scope</h2><p>The rollback manifest preserves source rows from one local run. It cannot delete or change records in another product.</p>
+      <h2>Rollback scope</h2><p>The rollback manifest preserves source rows from one local run. It cannot delete or change records in a customer system.</p>
       <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens through Sociobot on Dodo Payments.</p><p>The site stores a returned license and removes it from the address bar.</p><p>It checks that exact token with Sociobot before making the team kit available.</p>
       <h2>Software terms</h2><p>The CLI is provided under the MIT License. The software is provided without warranty, as the license explains.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
@@ -250,7 +250,7 @@ const notFound = `
 
 const routeData: Record<Route, { html: string; title: string; description: string; canonical: string }> = {
   '/': { html: landing, title: 'Import Mapping Replay — replay CSV imports', description: 'Replay customer CSV imports into a reviewed output file and error report before upload.', canonical: '/' },
-  '/demo': { html: demo(), title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay, three validation errors, and four output files.', canonical: '/demo' },
+  '/demo': { html: demo(), title: 'Demo — Import Mapping Replay', description: 'Review the bundled customer CSV replay, three validation errors, and four review files.', canonical: '/demo' },
   '/privacy': { html: privacy, title: 'Privacy — Import Mapping Replay', description: 'Read how the local CLI handles CSV files and how the website stores a team kit license.', canonical: '/privacy' },
   '/terms': { html: terms, title: 'Terms — Import Mapping Replay', description: 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', canonical: '/terms' },
   '/404': { html: notFound, title: 'Page not found — Import Mapping Replay', description: 'The requested Import Mapping Replay page was not found.', canonical: '/404' },

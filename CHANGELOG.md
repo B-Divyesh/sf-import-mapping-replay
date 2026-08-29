@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 repair 8 — 2026-08-29
+
+- Use “customer system” for every external destination boundary.
+- Use “review files” for the four replay outputs in copy, claims, tests, and CLI errors.
+- Add regression checks that reject the earlier ambiguous terms.
+
 ## 0.1.0 repair 7 — 2026-08-29
 
 - Bind cached team-kit verdicts to their license token and force checkout returns to verify.
@@ -14,8 +20,8 @@
 
 ## 0.1.0 repair 4 — 2026-08-29
 
-- Reject source or mapping paths that refer to any generated artifact.
-- Stage every replay artifact before publishing and preserve complete prior results when a run fails.
+- Reject source or mapping paths that refer to any generated review file.
+- Stage every review file before publishing and preserve complete prior results when a run fails.
 - Add exact checkout-return claims.
 
 ## 0.1.0 polish 3 — 2026-08-29

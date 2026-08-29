@@ -1,1 +1,1 @@
-Replay customer CSV imports before upload with reviewed evidence and validation reports.
+Replay customer CSV imports and inspect mapped values, errors, and source rows.

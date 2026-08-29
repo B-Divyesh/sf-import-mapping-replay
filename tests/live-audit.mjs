@@ -11,11 +11,11 @@ const licenseKey = 'sb_license:import-mapping-replay';
 const verdictKey = 'sb_license_verdict:import-mapping-replay';
 const routes = [
   ['/', 200, 'Import Mapping Replay — replay CSV imports', 'Replay CSV imports before upload', 'Replay customer CSV imports into a reviewed output file and error report before upload.', '/'],
-  ['/demo', 200, 'Demo — Import Mapping Replay', 'Review a finished CSV replay', 'Review the bundled customer CSV replay, three validation errors, and four output files.', '/demo'],
+  ['/demo', 200, 'Demo — Import Mapping Replay', 'Review a finished CSV replay', 'Review the bundled customer CSV replay, three validation errors, and four review files.', '/demo'],
   ['/privacy', 200, 'Privacy — Import Mapping Replay', 'Keep customer CSV files local', 'Read how the local CLI handles CSV files and how the website stores a team kit license.', '/privacy'],
   ['/terms', 200, 'Terms — Import Mapping Replay', 'Use replay files before uploading', 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', '/terms'],
   ['/404', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
-  ['/polish-7-not-found', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
+  ['/polish-8-not-found', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
 ];
 
 mkdirSync(evidenceDir, { recursive: true });
@@ -32,7 +32,7 @@ const browser = await chromium.launch();
 const report = { baseUrl, routes: [], notFoundMethods: {}, demo: {}, licenseFallback: {}, history: {}, consoleErrors: [] };
 
 try {
-  for (const path of ['/404', '/polish-7-not-found']) {
+  for (const path of ['/404', '/polish-8-not-found']) {
     for (const method of ['GET', 'HEAD']) {
       const response = await fetch(`${baseUrl}${path}`, { method, redirect: 'manual' });
       assert.equal(response.status, 404, `${method} ${path} status`);
@@ -90,7 +90,7 @@ try {
       assert.match(headers['content-security-policy'] || '', /frame-ancestors 'none'/, `${path} CSP`);
       assert.equal(headers['x-content-type-options'], 'nosniff', `${path} nosniff`);
       report.routes.push({ viewport: viewport.name, path, status: response?.status(), title, axeViolations: 0, horizontalOverflow: false });
-      if (path !== '/polish-7-not-found') {
+      if (path !== '/polish-8-not-found') {
         await page.screenshot({ path: join(evidenceDir, `${path === '/' ? 'home' : path.slice(1)}-${viewport.name}-cold.png`), fullPage: true });
       }
       await page.close();
@@ -215,9 +215,19 @@ try {
         'what the cli does not do',
         'show the sample replay again',
         'it does not connect to a customer system.',
+        'a rollback manifest cannot undo records imported into a customer system.',
         'five named mapping recipes for common template fields.',
         'a review checklist with upload owner and second-engineer approval fields.',
       ]) assert.equal(text.includes(required), true, `${path} required copy: ${required}`);
+    }
+    if (path === '/terms') {
+      for (const required of [
+        'review every result before sending data to a customer system.',
+        'it cannot delete or change records in a customer system.',
+      ]) assert.equal(text.includes(required), true, `${path} required copy: ${required}`);
+    }
+    for (const removed of ['another product', 'imported elsewhere', 'output artifact', 'all four artifacts', 'partial artifact', 'all four prior files']) {
+      assert.equal(text.includes(removed), false, `${path} inconsistent term: ${removed}`);
     }
   }
   await copyContext.close();

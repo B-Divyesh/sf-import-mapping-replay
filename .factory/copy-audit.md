@@ -1,4 +1,4 @@
-# Copy audit — repair 7
+# Copy audit — repair 8
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -45,7 +45,7 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | It does not connect to a customer system. | 8 | Pass |
 | It processes a source CSV when you run the command. | 10 | Pass |
 | It does not change a source CSV. | 7 | Pass |
-| A rollback manifest cannot undo records imported elsewhere. | 8 | Pass |
+| A rollback manifest cannot undo records imported into a customer system. | 11 | Pass: `rollback-local-scope` |
 | Keep the source CSV, mapping, and review files together for each customer upload. | 13 | Pass |
 | Optional team kit / Standardise the review handoff | 3 / 4 | Pass |
 | The team kit adds mapping recipes and a sign-off checklist. | 10 | Pass |
@@ -90,6 +90,8 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. No 
 | The site stores a returned license and removes it from the address bar. | 12 | Pass |
 | It checks that exact token with Sociobot before making the team kit available. | 13 | Pass: `license-return-token-binding` |
 | The CLI is provided under the MIT License. | 8 | Pass: `mit-license` |
+| Review every result before sending data to a customer system. | 10 | Pass: `rollback-local-scope` |
+| It cannot delete or change records in a customer system. | 10 | Pass: `rollback-local-scope` |
 
 The route headings remain literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
 
@@ -100,15 +102,15 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Replay customer CSV imports from one reviewed mapping file. | 9 | Pass |
 | The CLI writes an output CSV, field evidence, validation results, and original source rows. | 14 | Pass |
 | It is for implementation engineers who prepare repeatable template uploads. | 10 | Pass |
-| It does not connect to a customer system or undo records already imported elsewhere. | 14 | Pass |
+| It does not connect to or undo records in a customer system. | 12 | Pass: `cli-local-only`, `rollback-local-scope` |
 | The command copies a realistic customer CSV and mapping into a new temporary directory. | 14 | Pass |
-| It runs the replay and prints every output path. | 9 | Pass |
+| It runs the replay and prints every review file path. | 10 | Pass: `demo-temp`, `review-files` |
 | This package declares Rust 1.85 as its minimum compiler. | 9 | Pass: `rust-msrv` |
 | Install from this source checkout. | 5 | Pass: direct instruction |
 | Run cargo package to check the release archive. | 8 | Pass: direct instruction |
 | Add --json for machine-readable command output. | 6 | Pass |
 | The rollback manifest reconstructs input to this local transformation. | 9 | Pass |
-| It cannot undo records already uploaded to another product. | 10 | Pass |
+| It cannot undo records already uploaded to a customer system. | 10 | Pass: `rollback-local-scope` |
 | Mappings have a stable integer version. | 6 | Pass |
 | Version 1 maps named source columns to target columns in declaration order. | 12 | Pass |
 | Version 1 transforms are trim, lowercase, uppercase, replace, and date. | 10 | Pass |
@@ -118,10 +120,10 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | It rejects spaces and leading, trailing, or repeated domain dots. | 10 | Pass: `email-domain-validation` |
 | Missing mapped columns return exit code 1 and say to check the CSV header or mapping. | 16 | Pass |
 | Validation failures return exit code 2 after writing review files. | 10 | Pass |
-| The CLI rejects a source or mapping that resolves to an output artifact. | 12 | Pass |
-| It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. | 17 | Pass |
-| A malformed later row leaves no partial artifact. | 8 | Pass |
-| If a complete replay already exists, a failed rerun leaves all four prior files unchanged. | 15 | Pass |
+| The CLI rejects a source or mapping that resolves to a review file. | 13 | Pass: `source-unchanged` |
+| It builds all four review files in a staging directory and publishes them only after the replay succeeds. | 18 | Pass: `atomic-review-files` |
+| A malformed later row publishes no partial review files. | 9 | Pass: `atomic-review-files` |
+| If a complete replay already exists, a failed rerun leaves all four review files unchanged. | 15 | Pass: `atomic-review-files` |
 | npm run build creates the release binary and the static site in dist/site. | 13 | Pass: `build-artifacts` |
 | The site demo is available at /?demo=1 or /demo and uses only bundled sample data. | 15 | Pass |
 | Deploy dist/site to Azure Static Web Apps. | 7 | Pass |
@@ -148,8 +150,11 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Transformed table | output CSV |
 | Before-and-after record | evidence |
 | Original-row recovery file | rollback manifest |
-| Connected external product | customer system |
+| External destination | customer system |
+| Four replay outputs | review files |
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay customer CSV imports before upload with reviewed evidence and validation reports.” (88 characters.)
+Catalog description: “Replay customer CSV imports and inspect mapped values, errors, and source rows.” (79 characters.)
+
+Regression checks reject “another product” and destination uses of “elsewhere.” They also reject “artifact” or bare “files” for the four review files.

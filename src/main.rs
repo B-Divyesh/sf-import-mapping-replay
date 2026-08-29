@@ -121,7 +121,7 @@ fn display(report: &RunReport, json: bool, demo_directory: Option<&Path>) -> Res
 /// `create_dir` is atomic. The process id, nanosecond clock value, and local
 /// sequence make a collision vanishingly unlikely; an existing directory is
 /// still retried rather than shared. The directory intentionally persists so
-/// users can inspect the four output files printed by `demo`.
+/// users can inspect the four review files printed by `demo`.
 fn create_demo_directory() -> Result<PathBuf> {
     let temporary_root = std::env::temp_dir();
     for _ in 0..128 {

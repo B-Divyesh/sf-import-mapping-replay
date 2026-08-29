@@ -2,7 +2,7 @@
 
 Replay customer CSV imports from one reviewed mapping file. The CLI writes an output CSV, field evidence, validation results, and original source rows.
 
-It is for implementation engineers who prepare repeatable template uploads. It does not connect to a customer system or undo records already imported elsewhere.
+It is for implementation engineers who prepare repeatable template uploads. It does not connect to or undo records in a customer system.
 
 ## Try the bundled sample
 
@@ -10,7 +10,7 @@ It is for implementation engineers who prepare repeatable template uploads. It d
 cargo run -- demo
 ```
 
-The command copies a realistic customer CSV and mapping into a new temporary directory. It runs the replay and prints every output path.
+The command copies a realistic customer CSV and mapping into a new temporary directory. It runs the replay and prints every review file path.
 
 ## Install
 
@@ -33,7 +33,7 @@ import-mapping-replay run \
 ```
 
 Add `--json` for machine-readable command output. Successful results include
-status, row counts, and review-file paths. Failed commands print
+status, row counts, and review file paths. Failed commands print
 `{"status":"error","error":"..."}` to standard output and still return a
 nonzero exit code. A successful run writes:
 
@@ -42,7 +42,7 @@ nonzero exit code. A successful run writes:
 - `validation.json`: every validation issue with its source row.
 - `rollback-manifest.json`: the original source rows and source hash.
 
-The rollback manifest reconstructs input to this local transformation. It cannot undo records already uploaded to another product.
+The rollback manifest reconstructs input to this local transformation. It cannot undo records already uploaded to a customer system.
 
 ### Mapping format
 
@@ -74,7 +74,7 @@ Email validation accepts one ASCII local part and a domain with two or more labe
 
 Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Duplicate CSV headers return exit code 1 before an output directory is created; rename the duplicate headers and run again. Validation failures return exit code 2 after writing review files.
 
-The CLI rejects a source or mapping that resolves to an output artifact. It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. A malformed later row leaves no partial artifact. If a complete replay already exists, a failed rerun leaves all four prior files unchanged.
+The CLI rejects a source or mapping that resolves to a review file. It builds all four review files in a staging directory and publishes them only after the replay succeeds. A malformed later row publishes no partial review files. If a complete replay already exists, a failed rerun leaves all four review files unchanged.
 
 ## Develop and verify
 
