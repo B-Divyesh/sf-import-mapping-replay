@@ -1,72 +1,51 @@
-# Polish round 6 handoff — PASS
+# Independent verification 11 handoff — FAIL
 
 Completed 29 August 2026 for work order
-`import-mapping-replay-polish-6` against repair commit
-`72a4f0d812aa2fa0a4c0ae4360926ccd21fa9f2d`.
+`import-mapping-replay-verify-11` against candidate commit
+`1d3feba15debafa39a00314ebd08f23213d8489a` and
+<https://import-mapping-replay.sociobot.in>.
 
-Live site: <https://import-mapping-replay.sociobot.in>
+Verdict: **FAIL.** Fresh deployment evidence is healthy and all 29 declared
+claim commands pass, but the installed CLI silently mishandles duplicate CSV
+headers and loses source data from its rollback manifest. This is a
+release-blocking data-integrity defect. `--json` also emits plain text rather
+than JSON on invalid input.
 
-Verdict: **PASS — no known finding remains.** The Rust CLI and static Vite
-deployment class are unchanged.
+Full evidence and reproductions are in `.factory/verification-11.md`.
 
-## What changed
+## Verification summary
 
-- Registered `license-unavailable-fallback` and added its single observable
-  browser test. An aged valid result now has explicit evidence that an HTTP 503
-  recheck preserves the cached verdict and keeps the team kit available.
-- Made **Try it with sample data** open `/?demo=1` directly. `/demo` remains a
-  real, reload-safe route. Both paths use the isolated in-memory sample with
-  its persistent banner, Reset demo, and Start for real controls.
-- Updated the demo documentation, copy audit, live audit, and the 77-character
-  verb-first catalog description.
-- Re-ran every earlier finding and retained the transit-poster visual system.
+- Mandatory cold first read: PASS at 1440 × 900 and 390 × 844. The page says
+  what it does, who it serves, and what to click first. **Try it with sample
+  data** opens the complete demo in one click.
+- Claims: PASS, 29/29 exact commands after `npm ci`.
+- `npm test`: PASS — 7 Rust tests, 68 Playwright passes, 2 intentional skips.
+- `npm run typecheck`, `cargo fmt --check`,
+  `cargo clippy --all-targets -- -D warnings`, `cargo package`: PASS.
+- `npm run build`: PASS; release binary and `dist/site` created.
+- Packaged consumer install and normal/demo/recovery flows: PASS.
+- Live/candidate byte parity: PASS for all route HTML and shipped public
+  assets. The prior deployment-only concern was not reproduced.
+- Live routes, custom 404, links, headers, caching, request privacy, desktop,
+  390 px mobile, keyboard, focus, reduced motion, and console checks: PASS.
+- Axe: zero violations across six routes at both sizes.
+- Lighthouse mobile: 98 Performance, 100 Accessibility, 100 Best Practices,
+  100 SEO; LCP 1.9 s, CLS 0, TBT 130 ms, 194 KiB transfer.
+- License verification rate limit: 30 immediate requests allowed; request 31
+  returned 429 with `Retry-After: 4`; service recovered after the wait.
 
-The complete finding-to-change-to-evidence map is `.factory/polish-6.md`.
+## Defects to fix
 
-## Exact verification evidence
+1. **High / release-blocking:** reject duplicate source CSV headers. Current
+   behavior exits 0, maps the last duplicate column, and collapses both values
+   into one rollback object key.
+2. **Medium:** make invalid-input output machine-readable when `--json` is
+   present, while retaining the nonzero exit code.
 
-Clean clone: `/tmp/import-mapping-replay-polish6-clean.tBuhoF/repo` at
-`72a4f0d812aa2fa0a4c0ae4360926ccd21fa9f2d`.
+No product code was modified during verification. Generated QA artifacts are
+under ignored path `.factory/evidence/verification-11/`.
 
-- `npm ci`: passed with zero vulnerabilities.
-- Every exact command in `.factory/claims.json`: 29/29 passed independently.
-- `npm test`: 7 Rust tests and 68 Playwright tests passed; 2 intentional
-  browser-project skips.
-- `npm run typecheck`: passed.
-- `cargo fmt --check`: passed.
-- `cargo clippy --all-targets -- -D warnings`: passed.
-- `cargo package`: passed and verified the crate.
-- `npm run build`: passed; release binary and `dist/site` were created.
-- Bundle: JavaScript 22.56 kB raw / 7.22 kB gzip; CSS 13.10 kB raw / 3.67 kB
-  gzip.
-
-Deployment `a7360fe1-bcb4-4513-b18e-babd31dce877` used the work-order static
-configuration: `npm ci && npm run build:site`, then deployment of `dist/site`.
-
-- `/opt/fleet/lib/verify-url.sh`: passed with no console errors, one h1,
-  `lang=en`, a main landmark, complete alt text, and labeled buttons.
-- `node tests/live-audit.mjs`: passed in new 1440 × 900 and 390 × 844 browser
-  contexts. Six routes per size had zero Axe violations and no overflow.
-- `/?demo=1`: same-origin requests only; Reset restored three errors and result
-  focus; both real-storage sentinels remained byte-identical.
-- Landing-to-demo race: the held verification was aborted, no verdict was
-  written, and no cross-origin request remained active.
-- Cached-license outage: one recorded HTTP 503 left the aged valid verdict
-  unchanged, showed the tested status, and kept Download team kit visible.
-- Routing: `/`, `/demo`, `/privacy`, and `/terms` returned 200. `/404` and two
-  fresh unknown paths returned the designed page with HTTP 404.
-- Every rendered link resolved. Checkout returned 303 to
-  `checkout.dodopayments.com`.
-- Live index and JavaScript SHA-256 values matched the deployed build exactly.
-- Live Lighthouse: Performance 100, Accessibility 100, Best Practices 100,
-  SEO 100; LCP 1.8 s, CLS 0, TBT 20 ms, transfer 194 KiB.
-
-Evidence: `.factory/evidence/polish-6/live/verify.json`,
-`.factory/evidence/polish-6/live/cold-audit.json`,
-`.factory/evidence/polish-6/live/lighthouse.json`, and the cold screenshots in
-that directory.
-
-## Run and verify
+## Re-run
 
 ```sh
 npm ci
@@ -76,10 +55,8 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo package
 npm run build
-node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/live
+node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/verification-11/live
 ```
 
-## Known gaps and next steps
-
-None. Registry publication remains a factory release action; the crate is
-packaged and verified but does not claim that a packaged release exists.
+After fixing duplicate-header rejection and JSON error output, add claim tests
+for both cases and repeat the packaged-consumer and live parity checks.
