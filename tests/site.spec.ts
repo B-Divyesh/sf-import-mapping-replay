@@ -92,13 +92,41 @@ test('@claim:recorded-cli-sample landing recording matches bundled CLI demo outc
 
 test('@claim:demo-private demo stores nothing and sends no data away', async ({ page }) => {
   const requests: string[] = [];
+  const activeCrossOriginRequests = new Set<object>();
   page.on('request', request => requests.push(request.url()));
+  page.on('request', request => {
+    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') activeCrossOriginRequests.add(request);
+  });
+  page.on('requestfinished', request => activeCrossOriginRequests.delete(request));
+  page.on('requestfailed', request => activeCrossOriginRequests.delete(request));
   await page.addInitScript(() => localStorage.setItem('sb_license:import-mapping-replay', 'real-license-sentinel'));
   await page.goto('/demo');
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual({ 'sb_license:import-mapping-replay': 'real-license-sentinel' });
   expect(requests.every(url => new URL(url).origin === 'http://127.0.0.1:4173')).toBe(true);
+
+  let releaseVerification: (() => void) | undefined;
+  const verificationHeld = new Promise<void>(resolveHeld => { releaseVerification = resolveHeld; });
+  let markVerificationStarted: (() => void) | undefined;
+  const verificationStarted = new Promise<void>(resolveStarted => { markVerificationStarted = resolveStarted; });
+  await page.route('https://api.sociobot.in/api/v1/products/import-mapping-replay/verify?**', async route => {
+    markVerificationStarted?.();
+    await verificationHeld;
+    try {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ valid: true }) });
+    } catch {
+      // Entering demo aborts the held verification before this response is released.
+    }
+  });
+
+  await page.goto('/');
+  await verificationStarted;
+  await page.getByRole('link', { name: 'Try it with sample data' }).click();
+  await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
+  releaseVerification?.();
+  await expect.poll(() => activeCrossOriginRequests.size).toBe(0);
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage)))).toEqual({ 'sb_license:import-mapping-replay': 'real-license-sentinel' });
 });
 
 test('@claim:cli-offline CLI replays bundled data without a service or account', async () => {

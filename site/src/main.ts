@@ -257,6 +257,7 @@ const routeData: Record<Route, { html: string; title: string; description: strin
 };
 
 let terminalTimers: number[] = [];
+let licenseVerificationController: AbortController | null = null;
 
 function currentRoute(): Route {
   if (location.pathname === '/' && new URLSearchParams(location.search).get('demo') === '1') return '/demo';
@@ -312,8 +313,16 @@ function setLicenseState(valid: boolean, message: string): void {
   if (panel) panel.hidden = !valid;
 }
 
+function cancelLicenseVerification(): void {
+  licenseVerificationController?.abort();
+  licenseVerificationController = null;
+}
+
 async function verifyLicense(token: string, force = false): Promise<void> {
-  if (!token) return;
+  if (!token || currentRoute() === '/demo') return;
+  cancelLicenseVerification();
+  const controller = new AbortController();
+  licenseVerificationController = controller;
   let cached: LicenseVerdict | null = null;
   try {
     cached = JSON.parse(localStorage.getItem(VERDICT_KEY) || 'null') as LicenseVerdict | null;
@@ -322,16 +331,23 @@ async function verifyLicense(token: string, force = false): Promise<void> {
   }
   const fresh = cached && Date.now() - cached.checked < 86_400_000;
   if (cached?.valid) setLicenseState(true, 'License active. The team kit is ready.');
-  if (fresh && !force) return;
+  if (fresh && !force) {
+    if (licenseVerificationController === controller) licenseVerificationController = null;
+    return;
+  }
   setLicenseState(Boolean(cached?.valid), 'Checking the license…');
   try {
-    const response = await fetch(`${BILLING}/verify?license=${encodeURIComponent(token)}`);
+    const response = await fetch(`${BILLING}/verify?license=${encodeURIComponent(token)}`, { signal: controller.signal });
     if (!response.ok) throw new Error('verification unavailable');
     const result = await response.json() as { valid: boolean };
+    if (controller.signal.aborted || licenseVerificationController !== controller || currentRoute() === '/demo') return;
     localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: result.valid, checked: Date.now() }));
     setLicenseState(result.valid, result.valid ? 'License active. The team kit is ready.' : 'License no longer active. Check the token or buy the team kit.');
   } catch {
+    if (controller.signal.aborted || licenseVerificationController !== controller || currentRoute() === '/demo') return;
     setLicenseState(Boolean(cached?.valid), cached?.valid ? 'Using the last valid check while verification is unavailable.' : 'The license could not be checked. Check your connection and try again.');
+  } finally {
+    if (licenseVerificationController === controller) licenseVerificationController = null;
   }
 }
 
@@ -427,6 +443,7 @@ function jumpTo(scrollX: number, scrollY: number): void {
 function render(moveFocus = false, restorePosition?: HistoryPosition): void {
   stopTerminal();
   const route = currentRoute();
+  if (route === '/demo') cancelLicenseVerification();
   const page = routeData[route];
   const app = document.querySelector<HTMLElement>('#app');
   if (!app) return;

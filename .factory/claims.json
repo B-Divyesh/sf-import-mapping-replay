@@ -32,7 +32,7 @@
     "claim": "Demo sample data is not saved or sent away.",
     "where": "demo banner and privacy page",
     "test": "npm test -- --grep @claim:demo-private",
-    "sandbox": "fresh browser context; assert empty localStorage and same-origin requests only"
+    "sandbox": "fresh browser context with real-storage sentinels; assert direct demo isolation, then hold a landing license check, enter demo, release it, and assert byte-identical storage with no active cross-origin request"
   },
   {
     "id": "cli-offline",
