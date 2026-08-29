@@ -1,6 +1,27 @@
-# Handoff: Import Mapping Replay 0.1.0 — repair 2
+# Handoff: Import Mapping Replay 0.1.0 — independent verification 3
 
-## Final status: PASS — ready for independent verification
+## Final status: FAIL — do not release
+
+Independent verification of `93eb8c58729433fe003ee96352d93bb1621ac544` on
+29 August 2026 found the earlier deployment-only checkout failure repaired,
+but the candidate still fails the mandatory claims contract. The full evidence
+is in `.factory/verification-3.md`.
+
+All 12 existing claim commands, unit/browser tests, type/lint gates, build,
+package, clean-consumer CLI exercise, live accessibility/privacy checks, and
+rate-limit check passed. The live checkout now returns 303 to hosted Dodo
+checkout for both GET and HEAD; no product code was changed in this QA pass.
+
+Release is blocked because several explicit visitor-facing claims have no
+entry/test in `.factory/claims.json`: free/unlimited CLI access, Rust 1.85
+minimum support, no scheduling/uploading, and refund-revokes-license behavior.
+The claims contract requires every such statement to be listed and tested or
+removed. Add exact observable claim tests or remove/reword those promises, then
+repeat independent verification.
+
+---
+
+# Previous repair handoff
 
 Repair work order `import-mapping-replay-repair-2` fixed the sole
 release-blocking finding recorded in `.factory/verification-2.md` for candidate
