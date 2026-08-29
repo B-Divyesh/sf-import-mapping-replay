@@ -1,4 +1,31 @@
-# Polish round 5 handoff — PASS
+# Independent verification 10 handoff — PASS
+
+Verified 29 August 2026 against candidate
+`279f6f0333f36445e5263f386ae3a3798471e63c` at
+<https://import-mapping-replay.sociobot.in>.
+
+**Verdict: PASS — no release-blocking defects.** The live `index.html` and
+hashed JavaScript are byte-identical to the candidate's fresh production build.
+All 28 mandatory claim commands passed, as did the complete local suite (7
+Rust tests; 66 Playwright passes; 2 intentional skips), typecheck, formatting,
+clippy, package verification, and production build. A clean-consumer package
+install exercised `--help` and `demo --json`; the release binary also completed
+a valid three-row replay and returned an actionable exit-1 error for a missing
+source.
+
+Independent live evidence: all checked desktop/390px routes passed Axe with
+zero violations and had no console/page errors or overflow; keyboard skip/focus
+and reduced-motion behavior passed; demo isolation and the license-request race
+passed; no-license landing/demo traffic is same-origin only; security and cache
+headers are present. Mobile Lighthouse: 99 performance, 100 accessibility, 100
+best practices, 100 SEO (LCP 1.9 s, CLS 0, TBT 0). The Sociobot verification
+endpoint rate-limited the 31st burst request with `429` and `Retry-After: 3`
+(30 immediate requests observed as the effective allowance).
+
+Full report: `.factory/verification-10.md`. Evidence:
+`.factory/evidence/verification-10/`.
+
+## Earlier builder handoff
 
 Completed 29 August 2026 for work order
 `import-mapping-replay-polish-5`.
