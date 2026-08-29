@@ -29,18 +29,18 @@ The cumulative finding-by-finding record is `.factory/polish-5.md`.
 
 ## Exact verification evidence
 
-Clean clone: `/tmp/import-mapping-replay-polish5-clean.u5sq3j/repo` at
-`83329da8fd17cdfb606db4ea362f0f6c3ccec4a7`.
+Final pushed-revision clone:
+`/tmp/import-mapping-replay-polish5-final.suZGb7/repo` at
+`035281f80f41411916fbb05047b995d2897acebe`.
 
 - `npm ci`: passed with zero vulnerabilities.
 - All 28 exact `test` commands in `.factory/claims.json`: 28/28 passed independently.
-- `npm test`: 7 Rust tests and 64 Playwright tests passed; 2 intentional project skips.
+- `npm test`: 7 Rust tests and 66 Playwright tests passed; 2 intentional project skips.
 - `npm run typecheck`: passed.
 - `cargo fmt --check`: passed.
 - `cargo clippy --all-targets -- -D warnings`: passed.
 - `cargo package`: passed; crate verified.
 - `npm run build`: passed and created the release binary plus `dist/site`.
-- Final workspace `npm test`: 7 Rust tests and 66 Playwright tests passed; 2 intentional project skips.
 - Production bundle: JS 22.55 kB raw / 7.22 kB gzip; CSS 13.10 kB raw / 3.67 kB gzip.
 - Local and live SHA-256 match: JS `56339fa81f35a53c26216536dae8fe09958041610af6115026720aae0f99e67c`; index `4efa85bdad69d843aa563fbc223b925c7f019936089d98dd1cb2431a696c022b`.
 - `/opt/fleet/lib/verify-url.sh https://import-mapping-replay.sociobot.in .factory/evidence/polish-5/live`: passed; no console errors, one h1, `lang=en`, main, complete alt text, and labeled buttons.

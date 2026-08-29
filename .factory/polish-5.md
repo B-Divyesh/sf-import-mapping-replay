@@ -4,9 +4,10 @@ Product repair commit: `83329da8fd17cdfb606db4ea362f0f6c3ccec4a7`.
 Deployment: `20086067-b7bd-4fc2-884f-5e9c5d40c59d` at
 <https://import-mapping-replay.sociobot.in>.
 
-Evidence files are retained under `.factory/evidence/polish-5/`. The clean
-clone was `/tmp/import-mapping-replay-polish5-clean.u5sq3j/repo` at the repair
-commit. Every live check below ran after deployment in a new browser context.
+Evidence files are retained under `.factory/evidence/polish-5/`. The final
+clean verification clone was `/tmp/import-mapping-replay-polish5-final.suZGb7/repo`
+at `035281f80f41411916fbb05047b995d2897acebe`. Every live check below ran after
+deployment in a new browser context.
 
 ## Review 1 findings
 
@@ -67,9 +68,8 @@ commit. Every live check below ran after deployment in a new browser context.
 
 ## Acceptance evidence
 
-- Clean clone at `83329da8fd17cdfb606db4ea362f0f6c3ccec4a7`: `npm ci`, then every exact command in `.factory/claims.json` independently. Result: 28/28 passed.
-- Clean-clone full suite: 7 Rust tests and 64 Playwright tests passed; 2 intentional project skips. Typecheck, rustfmt, Clippy with warnings denied, `cargo package`, and `npm run build` passed.
-- Final workspace suite after adding the reusable live audit: 7 Rust tests and 66 Playwright tests passed; 2 intentional project skips.
+- Final pushed-revision clone at `035281f80f41411916fbb05047b995d2897acebe`: `npm ci`, then every exact command in `.factory/claims.json` independently. Result: 28/28 passed.
+- Final clean-clone suite: 7 Rust tests and 66 Playwright tests passed; 2 intentional project skips. Typecheck, rustfmt, Clippy with warnings denied, `cargo package`, and `npm run build` passed.
 - Production bundle: JavaScript 22.55 kB raw / 7.22 kB gzip; CSS 13.10 kB raw / 3.67 kB gzip. Live JavaScript and `index.html` SHA-256 values match the deployed build.
 - `/opt/fleet/lib/verify-url.sh` passed with no console errors. Report: `.factory/evidence/polish-5/live/verify.json`.
 - The live audit ran Axe on six routes at desktop and mobile sizes: zero violations, zero horizontal overflow, no application console errors. Report: `.factory/evidence/polish-5/live/cold-audit.json`.
