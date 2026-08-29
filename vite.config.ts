@@ -5,7 +5,7 @@ export default defineConfig({
   root: 'site',
   publicDir: 'public',
   build: {
-    outDir: process.env.SITE_OUT_DIR ? resolve(process.env.SITE_OUT_DIR) : resolve('dist/site'),
+    outDir: '../dist/site',
     emptyOutDir: true,
     target: 'es2022',
     rollupOptions: {

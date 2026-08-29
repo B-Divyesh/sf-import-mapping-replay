@@ -179,7 +179,7 @@
     "claim": "npm run build creates the release binary and the static site in dist/site.",
     "where": "README develop and verify section",
     "test": "npm test -- --grep @claim:build-artifacts",
-    "sandbox": "clean checkout with isolated Cargo and Vite output directories; run npm run build and assert the release executable, site index, route documents, and hashed assets"
+    "sandbox": "fresh temporary source workspace; run npm run build with default paths and assert the release executable, dist/site index, route documents, and hashed assets"
   },
   {
     "id": "site-routing-headers",

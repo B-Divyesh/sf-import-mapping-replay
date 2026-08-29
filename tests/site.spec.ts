@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -191,16 +191,21 @@ test('@claim:rust-msrv package metadata declares Rust 1.85 as the minimum compil
 test('@claim:build-artifacts npm run build creates the release CLI and static site', async ({}, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'one isolated build proves both browser projects use the same artifacts');
   const root = mkdtempSync(join(tmpdir(), 'replay-build-claim-'));
-  const cargoTarget = join(root, 'target');
-  const siteOutput = join(root, 'site');
+  for (const file of ['Cargo.toml', 'Cargo.lock', 'package.json', 'package-lock.json', 'vite.config.ts', 'README.md', 'LICENSE']) {
+    cpSync(resolve(file), join(root, file));
+  }
+  for (const directory of ['src', 'site', 'examples']) {
+    cpSync(resolve(directory), join(root, directory), { recursive: true });
+  }
+  symlinkSync(resolve('node_modules'), join(root, 'node_modules'), 'dir');
   execFileSync('npm', ['run', 'build'], {
-    cwd: resolve('.'),
-    env: { ...process.env, CARGO_TARGET_DIR: cargoTarget, SITE_OUT_DIR: siteOutput },
+    cwd: root,
     stdio: 'pipe',
   });
-  expect(existsSync(resolve('dist/site/index.html'))).toBe(true);
-  expect(existsSync(join(cargoTarget, 'release', 'import-mapping-replay'))).toBe(true);
-  expect(execFileSync(join(cargoTarget, 'release', 'import-mapping-replay'), ['--version'], { encoding: 'utf8' })).toContain('0.1.0');
+  const executable = join(root, 'target', 'release', 'import-mapping-replay');
+  const siteOutput = join(root, 'dist', 'site');
+  expect(existsSync(executable)).toBe(true);
+  expect(execFileSync(executable, ['--version'], { encoding: 'utf8' })).toContain('0.1.0');
   for (const file of ['index.html', 'demo.html', 'privacy.html', 'terms.html', '404.html', 'staticwebapp.config.json']) {
     expect(existsSync(join(siteOutput, file)), file).toBe(true);
   }
