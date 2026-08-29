@@ -400,6 +400,37 @@ test('purchase copy keeps only the checkout behavior covered by evidence', async
   }
 });
 
+test('documentation and page copy retain every reviewed wording correction', async ({ page }) => {
+  const readme = readFileSync(resolve('README.md'), 'utf8');
+  expect(readme).toContain('## Run a CSV replay');
+  expect(readme).toContain('Install from this source checkout');
+  expect(readme).toContain('Run `cargo package` to check the release archive.');
+  expect(readme).toContain('`npm run build` creates the release binary and the static site in `dist/site`.');
+  expect(readme).toContain('Production site: <https://import-mapping-replay.sociobot.in>');
+  expect(readme).toContain('MIT. See [LICENSE](LICENSE).');
+  expect(readme).toContain('customer system');
+  expect(readme).not.toContain('The factory publishes releases.');
+  expect(readme).not.toContain('ready for registry review');
+  expect(readme).not.toContain('SaaS account');
+
+  const catalog = readFileSync(resolve('.factory/catalog-description.txt'), 'utf8').trim();
+  expect(catalog).toBe('Replay customer CSV imports before upload with field-level evidence and validation.');
+  expect(catalog.length).toBeLessThanOrEqual(120);
+
+  await page.goto('/');
+  for (const text of [
+    'Replay CSV imports before upload',
+    'How the replay works',
+    'What the CLI does not do',
+    'Show the sample replay again',
+    'It does not connect to a customer system.',
+    'Five named mapping recipes for common template fields.',
+    'A review checklist with upload owner and second-engineer approval fields.',
+  ]) {
+    await expect(page.getByText(text, { exact: true })).toBeVisible();
+  }
+});
+
 test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {
   let verifyUrl = '';
   const requests: string[] = [];
