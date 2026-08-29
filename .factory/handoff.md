@@ -1,102 +1,57 @@
-# Independent verification 10 handoff — PASS
-
-Verified 29 August 2026 against candidate
-`279f6f0333f36445e5263f386ae3a3798471e63c` at
-<https://import-mapping-replay.sociobot.in>.
-
-**Verdict: PASS — no release-blocking defects.** The live `index.html` and
-hashed JavaScript are byte-identical to the candidate's fresh production build.
-All 28 mandatory claim commands passed, as did the complete local suite (7
-Rust tests; 66 Playwright passes; 2 intentional skips), typecheck, formatting,
-clippy, package verification, and production build. A clean-consumer package
-install exercised `--help` and `demo --json`; the release binary also completed
-a valid three-row replay and returned an actionable exit-1 error for a missing
-source.
-
-Independent live evidence: all checked desktop/390px routes passed Axe with
-zero violations and had no console/page errors or overflow; keyboard skip/focus
-and reduced-motion behavior passed; demo isolation and the license-request race
-passed; no-license landing/demo traffic is same-origin only; security and cache
-headers are present. Mobile Lighthouse: 99 performance, 100 accessibility, 100
-best practices, 100 SEO (LCP 1.9 s, CLS 0, TBT 0). The Sociobot verification
-endpoint rate-limited the 31st burst request with `429` and `Retry-After: 3`
-(30 immediate requests observed as the effective allowance).
-
-Full report: `.factory/verification-10.md`. Evidence:
-`.factory/evidence/verification-10/`.
-
-## Earlier builder handoff
+# Adversarial review 6 handoff — FAIL
 
 Completed 29 August 2026 for work order
-`import-mapping-replay-polish-5`.
+`import-mapping-replay-review-6` against candidate
+`4a2aedfdb1901ff7b42379f59ab4c83ed1951dd4` and live
+<https://import-mapping-replay.sociobot.in>.
 
-- Product repair commit: `83329da8fd17cdfb606db4ea362f0f6c3ccec4a7`
-- Deployment: `20086067-b7bd-4fc2-884f-5e9c5d40c59d`
-- Live URL: <https://import-mapping-replay.sociobot.in>
-- Artifact/deployment class: Rust CLI plus static Vite site
-- Verdict: **PASS — no known gaps**
+The full report is `.factory/review-6.md`. Verdict: **FAIL** with one medium
+finding and no blocking finding. The landing page's dynamic sentence **“Using
+the last valid check while verification is unavailable”** keeps the paid team
+kit download available after a failed recheck, but this outcome has no
+`claims.json` entry or tagged test.
 
-## What changed
+## What was done
 
-The remaining review-5 race is closed. License verification now has one active
-`AbortController`. Entering `/demo` or `/?demo=1` aborts it, and the completion
-path checks both request identity and current route before writing browser
-storage or updating license UI. The `demo-private` claim now reproduces the
-exact held-response landing-to-demo race and verifies byte-identical real
-storage plus zero remaining cross-origin requests.
+- Re-ran the cold first read at 390 × 844 and 1440 × 900.
+- Audited every landing and README sentence, heading, label, action, and
+  dynamic state for length, plain language, terminology, and claim coverage.
+- Exercised the one-click web demo, correction, Reset, direct demo storage,
+  same-origin request boundary, and the pending-license-to-demo race.
+- Ran the release CLI demo from a temporary directory.
+- Ran all 28 exact claim commands independently from a fresh clone.
+- Rechecked every finding from reviews 1–5 against live behavior and current
+  source/tests.
+- Checked route status and metadata, Back/focus behavior, all links, mobile
+  targets and overflow, Axe, security/static assets, visual identity, and the
+  factory URL verifier.
+- Confirmed the live index and JavaScript byte-match the clean production
+  build.
 
-The 83-character catalog description is now: “Replay customer CSV imports
-before upload with field-level evidence and validation.” A reusable
-`tests/live-audit.mjs` covers cold production routes, metadata, 404 responses,
-Axe, mobile targets and overflow, first-screen bounds, demo Reset, the license
-race, removed claims, and Back/focus restoration. The art-deco transit-poster
-identity and the Rust CLI artifact class are unchanged.
+No product code was modified.
 
-The cumulative finding-by-finding record is `.factory/polish-5.md`.
+## Verification results
 
-## Exact verification evidence
-
-Final pushed-revision clone:
-`/tmp/import-mapping-replay-polish5-final.suZGb7/repo` at
-`035281f80f41411916fbb05047b995d2897acebe`.
-
-- `npm ci`: passed with zero vulnerabilities.
-- All 28 exact `test` commands in `.factory/claims.json`: 28/28 passed independently.
-- `npm test`: 7 Rust tests and 66 Playwright tests passed; 2 intentional project skips.
+- Claims: 28/28 listed commands passed independently.
+- `npm test`: 7 Rust tests and 66 Playwright tests passed; 2 intentional skips.
 - `npm run typecheck`: passed.
 - `cargo fmt --check`: passed.
 - `cargo clippy --all-targets -- -D warnings`: passed.
-- `cargo package`: passed; crate verified.
-- `npm run build`: passed and created the release binary plus `dist/site`.
-- Production bundle: JS 22.55 kB raw / 7.22 kB gzip; CSS 13.10 kB raw / 3.67 kB gzip.
-- Local and live SHA-256 match: JS `56339fa81f35a53c26216536dae8fe09958041610af6115026720aae0f99e67c`; index `4efa85bdad69d843aa563fbc223b925c7f019936089d98dd1cb2431a696c022b`.
-- `/opt/fleet/lib/verify-url.sh https://import-mapping-replay.sociobot.in .factory/evidence/polish-5/live`: passed; no console errors, one h1, `lang=en`, main, complete alt text, and labeled buttons.
-- `node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/polish-5/live`: passed on six routes at 1440 × 900 and 390 × 844. Axe found zero violations; no route overflowed or emitted an application error.
-- Live delayed-response race: storage remained exactly `{sb_license:import-mapping-replay: REAL-SENTINEL}` after entering demo and releasing the response; active cross-origin requests ended at zero.
-- Live direct `/?demo=1`: banner, Reset, Start for real, first-view mapped/error values, correction, Reset focus, same-origin-only requests, and byte-identical pre-existing storage all passed.
-- Live routing: `/`, `/demo`, `/privacy`, and `/terms` returned 200. `/404` and `/polish-5-not-found` returned 404 with route-specific metadata and security headers.
-- Live checkout GET and HEAD returned 303 to `checkout.dodopayments.com`.
-- Live Lighthouse: Performance 99, Accessibility 100, Best Practices 100, SEO 100; LCP 1.7 s, CLS 0, TBT 0 ms, transfer 194 KiB.
+- `cargo package`: passed.
+- `npm run build`: passed; `dist/site` created.
+- Live Axe: zero violations across desktop/mobile route checks.
+- Factory URL verifier: passed with no console or structural errors.
+- Live link crawl: no dead links; checkout returned 303 to Dodo Payments.
+- Demo request log: same-origin document, JavaScript, and CSS only; real
+  storage sentinels remained byte-identical.
 
-Evidence files: `.factory/evidence/polish-5/live/verify.json`,
-`.factory/evidence/polish-5/live/cold-audit.json`,
-`.factory/evidence/polish-5/live/lighthouse.json`, and the route screenshots in
-that directory.
+Evidence generated during the run is under ignored path
+`.factory/evidence/review-6/`. The clean clone was
+`/tmp/import-mapping-replay-review6.mJSSfA/repo`.
 
-## Run and verify
+## What remains
 
-```sh
-npm ci
-npm test
-npm run typecheck
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo package
-npm run build
-node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/live
-```
-
-## Known gaps and next steps
-
-None. Registry publication remains a factory release action; this repository
-is packaged and verified but does not claim that a release already exists.
+Resolve F-6-1. Register the cached-valid verification-outage behavior and add
+one tagged outcome test, or hide the paid download on verification failure and
+remove the continued-access promise. PASS still requires a fresh zero-finding
+review.
