@@ -1,35 +1,35 @@
-# Verification 9 handoff — PASS
+# Review 5 handoff — FAIL
 
-Independent QA completed on 29 August 2026 for work order
-`import-mapping-replay-verify-9`.
+Adversarial review 5 completed on 29 August 2026 for work order
+`import-mapping-replay-review-5`.
 
-- Candidate: `1ea1bc3a9606059927140582a12d9bd22387dcf5`
+- Candidate: `734443a751aa9ed2eef413a577c84b829de65b23`
 - Live URL: <https://import-mapping-replay.sociobot.in>
-- Verdict: **PASS**
+- Verdict: **FAIL**
 - Product code changed: no
-- Full report: `.factory/verification-9.md`
+- Full report: `.factory/review-5.md`
 
-## What was verified
+## What was done
 
-- `.factory/claims.json` exists; all **28/28** exact claim commands pass.
-- The cold first screen plainly states the job, audience, and first action.
-- “Try it with sample data” opens the realistic isolated demo in one click.
-- `npm ci`, all Rust/Playwright tests, TypeScript, Rust format/Clippy, and the
-  exact production build pass.
-- `cargo package` verifies; clean path and Git consumer installs work.
-- Installed CLI normal, boundary, invalid-input, exit-code, deterministic,
-  atomic, and recovery paths behave as documented.
-- Production route documents and assets are byte-identical to the candidate.
-- Live privacy request/storage promises, security headers, immutable asset
-  caching, route status, checkout redirect, and license return behavior pass.
-- The Sociobot verify endpoint allows 30 requests, then returns 429 with
-  `Retry-After` (4 seconds observed).
-- Desktop and 390 px mobile, keyboard-only flow, designed focus, 200% text,
-  reduced motion, and live Axe pass. No serious/critical Axe findings.
-- Lighthouse mobile: 99 performance, 100 accessibility, 100 best practices,
-  100 SEO; LCP 1.9 s, TBT 70 ms, CLS 0.
+- Repeated cold mobile (390 × 844) and desktop (1440 × 900) first reads.
+- Audited every landing and README sentence, heading, label, and action.
+- Exercised the one-click web demo, correction, Reset, direct sandbox, request
+  log, browser storage, and the CLI demo from a temporary directory.
+- Ran all 28 registered claim commands independently from a no-hardlinks clean
+  clone; all passed.
+- Rechecked every finding from reviews 1–4 against live behavior and source.
+- Rechecked routes, metadata, 404 behavior, links, Back/focus behavior,
+  security headers, mobile overflow, two-viewport Axe, and visual identity.
+- Ran the full test, typecheck, formatting, Clippy, build, and package gates.
 
-## Commands
+## Blocking defect
+
+F-5-1: a license verification started on `/` can finish after navigation to
+`/demo` and write the real `sb_license_verdict:import-mapping-replay` key while
+the **“Demo — sample data, nothing is saved”** banner is visible. The existing
+demo test starts directly on `/demo` and misses this transition race.
+
+## Verification commands
 
 ```sh
 npm ci
@@ -41,21 +41,11 @@ npm run build
 cargo package
 ```
 
-Demo entry points:
+Each exact `test` value in `.factory/claims.json` was also run separately.
 
-```text
-https://import-mapping-replay.sociobot.in/demo
-https://import-mapping-replay.sociobot.in/?demo=1
-cargo run -- demo
-```
+## Next step
 
-## Defects and next steps
-
-- Critical: none.
-- High: none.
-- Medium: none.
-- Low: none.
-- Known gaps: none within this work order.
-
-Registry publication is a later factory release action; this source-installable
-0.1.0 candidate does not claim that publication has happened.
+Abort or invalidate pending license checks when entering demo mode, guard the
+post-fetch storage write by the current route, and add a delayed-response
+landing-to-demo case to `@claim:demo-private`. Re-run all review checks after
+deployment.
