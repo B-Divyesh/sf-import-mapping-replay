@@ -188,6 +188,53 @@ test('@claim:rust-msrv package metadata declares Rust 1.85 as the minimum compil
   expect(packageMetadata?.rust_version).toBe('1.85');
 });
 
+test('@claim:build-artifacts npm run build creates the release CLI and static site', async ({}, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'one isolated build proves both browser projects use the same artifacts');
+  const root = mkdtempSync(join(tmpdir(), 'replay-build-claim-'));
+  const cargoTarget = join(root, 'target');
+  const siteOutput = join(root, 'site');
+  execFileSync('npm', ['run', 'build'], {
+    cwd: resolve('.'),
+    env: { ...process.env, CARGO_TARGET_DIR: cargoTarget, SITE_OUT_DIR: siteOutput },
+    stdio: 'pipe',
+  });
+  expect(existsSync(resolve('dist/site/index.html'))).toBe(true);
+  expect(existsSync(join(cargoTarget, 'release', 'import-mapping-replay'))).toBe(true);
+  expect(execFileSync(join(cargoTarget, 'release', 'import-mapping-replay'), ['--version'], { encoding: 'utf8' })).toContain('0.1.0');
+  for (const file of ['index.html', 'demo.html', 'privacy.html', 'terms.html', '404.html', 'staticwebapp.config.json']) {
+    expect(existsSync(join(siteOutput, file)), file).toBe(true);
+  }
+  const assets = readdirSync(join(siteOutput, 'assets'));
+  expect(assets.some(file => /^main-[\w-]+\.js$/.test(file))).toBe(true);
+  expect(assets.some(file => /^main-[\w-]+\.css$/.test(file))).toBe(true);
+});
+
+test('@claim:site-routing-headers static host serves routes, a custom 404, and security headers', async ({ request }) => {
+  for (const path of ['/', '/demo', '/privacy', '/terms']) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+    expect(response.headers()['content-security-policy'], path).toContain("frame-ancestors 'none'");
+    expect(response.headers()['x-content-type-options'], path).toBe('nosniff');
+    expect(response.headers()['referrer-policy'], path).toBe('strict-origin-when-cross-origin');
+    expect(response.headers()['permissions-policy'], path).toContain('camera=()');
+  }
+  for (const path of ['/404', '/claim-missing-route']) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(404);
+    expect(await response.text()).toContain('<title>Page not found — Import Mapping Replay</title>');
+  }
+});
+
+test('@claim:mit-license Cargo metadata and LICENSE contain the MIT terms', async () => {
+  const cargo = readFileSync(resolve('Cargo.toml'), 'utf8');
+  const license = readFileSync(resolve('LICENSE'), 'utf8');
+  expect(cargo).toMatch(/^license = "MIT"$/m);
+  expect(license).toContain('Permission is hereby granted, free of charge, to any person obtaining a copy');
+  expect(license).toContain('The above copyright notice and this permission notice shall be included in all');
+  expect(license).toContain('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND');
+  expect(license).toContain('IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM');
+});
+
 test('@claim:cli-replay @claim:mapping-v1 @claim:json-output CLI writes deterministic transformed output and manifests', async () => {
   const out = mkdtempSync(join(tmpdir(), 'replay-claim-'));
   const source = resolve('examples/valid-customers.csv');

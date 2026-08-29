@@ -1,4 +1,4 @@
-# Copy audit — polish 3
+# Copy audit — polish 4
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -52,7 +52,7 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | Five named mapping recipes for common template fields. | 8 | Pass |
 | A review checklist with upload owner and second-engineer approval fields. | 10 | Pass |
 | Team mapping kit / One-time purchase. | 3 / 2 | Pass |
-| Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
+| Checkout opens through Sociobot on Dodo Payments. | 7 | Pass: `checkout-redirect` |
 | Buy the team kit | 4 | Pass |
 | A revoked license locks the team kit. | 7 | Pass |
 | Have a license? Paste it here / Verify license | 6 / 2 | Pass |
@@ -87,6 +87,7 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. No 
 | Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
 | After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot. | 19 | Pass |
 | The site stores a returned license, removes it from the address bar, and verifies it with Sociobot. | 17 | Pass |
+| The CLI is provided under the MIT License. | 8 | Pass: `mit-license` |
 
 The route headings remain literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
 
@@ -100,9 +101,9 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | It does not connect to a customer system or undo records already imported elsewhere. | 14 | Pass |
 | The command copies a realistic customer CSV and mapping into a new temporary directory. | 14 | Pass |
 | It runs the replay and prints every output path. | 9 | Pass |
-| This package declares Rust 1.85 as its minimum compiler. | 9 | Pass |
-| The package is ready for registry review with cargo package. | 10 | Pass |
-| The factory publishes releases. | 4 | Pass |
+| This package declares Rust 1.85 as its minimum compiler. | 9 | Pass: `rust-msrv` |
+| Install from this source checkout. | 5 | Pass: direct instruction |
+| Run cargo package to check the release archive. | 8 | Pass: direct instruction |
 | Add --json for machine-readable command output. | 6 | Pass |
 | The rollback manifest reconstructs input to this local transformation. | 9 | Pass |
 | It cannot undo records already uploaded to another product. | 10 | Pass |
@@ -117,12 +118,11 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. | 17 | Pass |
 | A malformed later row leaves no partial artifact. | 8 | Pass |
 | If a complete replay already exists, a failed rerun leaves all four prior files unchanged. | 15 | Pass |
-| npm run build compiles the release binary and the Vite site. | 11 | Pass |
-| Static deployment output lands in dist/site, with index.html at that root. | 11 | Pass |
+| npm run build creates the release binary and the static site in dist/site. | 13 | Pass: `build-artifacts` |
 | The site demo is available at /demo or /?demo=1 and uses only bundled sample data. | 15 | Pass |
 | Deploy dist/site to Azure Static Web Apps. | 7 | Pass |
-| Its configuration rewrites known routes, returns the custom 404 for unknown URLs, and sets security headers. | 16 | Pass |
-| The factory publishes the site at import-mapping-replay.sociobot.in. | 7 | Pass |
+| Its configuration serves known routes, returns the custom 404 for unknown URLs, and sets security headers. | 16 | Pass: `site-routing-headers` |
+| Production site: import-mapping-replay.sociobot.in | 3 | Pass: label, not a publication claim |
 | CSV processing runs in the local binary. | 7 | Pass |
 | The CLI makes no network requests while replaying a CSV. | 10 | Pass |
 | The website stores only a pasted license and its last verification result in your browser. | 14 | Pass |
@@ -130,6 +130,8 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields. | 19 | Pass |
 | The buy link opens Dodo Payments checkout through Sociobot. | 9 | Pass |
 | After checkout, the site stores the returned license in localStorage, removes it from the address bar, and verifies it with Sociobot. | 21 | Pass |
+| MIT. | 1 | Pass: `mit-license` |
+| See LICENSE. | 2 | Pass: direct instruction |
 
 ## Terminology
 
@@ -145,4 +147,4 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay CSV imports into an output file and error report before upload.” (70 characters.)
+Catalog description: “Replay customer CSV imports with field evidence before upload.” (62 characters.)

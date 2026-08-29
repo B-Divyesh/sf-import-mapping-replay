@@ -14,14 +14,14 @@ The command copies a realistic customer CSV and mapping into a new temporary dir
 
 ## Install
 
-This package declares Rust 1.85 as its minimum compiler:
+This package declares Rust 1.85 as its minimum compiler. Install from this source checkout:
 
 ```sh
 cargo install --path .
 import-mapping-replay --help
 ```
 
-The package is ready for registry review with `cargo package`. The factory publishes releases.
+Run `cargo package` to check the release archive.
 
 ## Run a CSV replay
 
@@ -80,11 +80,13 @@ npm test
 npm run build
 ```
 
-`npm run build` compiles the release binary and the Vite site. Static deployment output lands in `dist/site`, with `index.html` at that root. The site demo is available at `/demo` or `/?demo=1` and uses only bundled sample data.
+`npm run build` creates the release binary and the static site in `dist/site`. The site demo is available at `/demo` or `/?demo=1` and uses only bundled sample data.
 
 ## Deploy
 
-Deploy `dist/site` to Azure Static Web Apps. Its configuration rewrites known routes, returns the custom 404 for unknown URLs, and sets security headers. The factory publishes the site at <https://import-mapping-replay.sociobot.in>.
+Deploy `dist/site` to Azure Static Web Apps. Its configuration serves known routes, returns the custom 404 for unknown URLs, and sets security headers.
+
+Production site: <https://import-mapping-replay.sociobot.in>
 
 ## Privacy and price
 

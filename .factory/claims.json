@@ -173,5 +173,26 @@
     "where": "landing limits, terms, and README",
     "test": "npm test -- --grep @claim:rollback-local-scope",
     "sandbox": "fresh temporary directory; assert the source and outside marker are unchanged and all four writes stay in the chosen output directory"
+  },
+  {
+    "id": "build-artifacts",
+    "claim": "npm run build creates the release binary and the static site in dist/site.",
+    "where": "README develop and verify section",
+    "test": "npm test -- --grep @claim:build-artifacts",
+    "sandbox": "clean checkout with isolated Cargo and Vite output directories; run npm run build and assert the release executable, site index, route documents, and hashed assets"
+  },
+  {
+    "id": "site-routing-headers",
+    "claim": "The static configuration serves known routes, returns the custom 404 for unknown URLs, and sets security headers.",
+    "where": "README deploy section",
+    "test": "npm test -- --grep @claim:site-routing-headers",
+    "sandbox": "built site served through the Azure Static Web Apps emulator; assert known route rewrites, unknown 404 response, custom page metadata, and all named security headers"
+  },
+  {
+    "id": "mit-license",
+    "claim": "The CLI is licensed under MIT.",
+    "where": "README and terms page",
+    "test": "npm test -- --grep @claim:mit-license",
+    "sandbox": "clean checkout; assert Cargo metadata declares MIT and LICENSE contains the complete MIT grant, condition, and warranty disclaimer"
   }
 ]

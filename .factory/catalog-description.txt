@@ -1,1 +1,1 @@
-Replay CSV imports into an output file and error report before upload.
+Replay customer CSV imports with field evidence before upload.
