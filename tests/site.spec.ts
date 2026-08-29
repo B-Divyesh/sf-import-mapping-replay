@@ -252,9 +252,13 @@ test('@claim:site-routing-headers static host serves routes, a custom 404, and s
     expect(response.headers()['permissions-policy'], path).toContain('camera=()');
   }
   for (const path of ['/404', '/claim-missing-route']) {
-    const response = await request.get(path);
-    expect(response.status(), path).toBe(404);
-    expect(await response.text()).toContain('<title>Page not found — Import Mapping Replay</title>');
+    for (const method of ['get', 'head'] as const) {
+      const response = await request[method](path);
+      expect(response.status(), `${method.toUpperCase()} ${path}`).toBe(404);
+      if (method === 'get') {
+        expect(await response.text()).toContain('<title>Page not found — Import Mapping Replay</title>');
+      }
+    }
   }
   for (const path of ['/assets/replay-poster.webp', '/assets/og-replay.webp']) {
     const response = await request.get(path);
@@ -312,12 +316,23 @@ test('@claim:cli-replay @claim:mapping-v1 @claim:json-output CLI writes determin
   expect(JSON.parse(readFileSync(join(rulesRoot, 'out/validation.json'), 'utf8')).issues[0].rule).toBe('required');
 });
 
-test('@claim:email-domain-validation CLI rejects malformed email-domain boundaries', async () => {
+test('@claim:email-domain-validation CLI accepts the documented email form and rejects unsupported values', async () => {
   const root = mkdtempSync(join(tmpdir(), 'replay-email-boundaries-'));
   const source = join(root, 'emails.csv');
   const mapping = join(root, 'mapping.json');
   const output = join(root, 'out');
-  writeFileSync(source, 'email\nvalid@example.com\na@.com\na@example.\na@b..com\n');
+  writeFileSync(source, [
+    'email',
+    'valid@example.com',
+    'person+tag@sub.example.co',
+    'māya@example.com',
+    'a b@example.com',
+    'a@exa mple.com',
+    'a@example',
+    'a@.com',
+    'a@example.',
+    'a@b..com',
+  ].join('\n') + '\n');
   writeFileSync(mapping, JSON.stringify({
     version: 1,
     fields: [{ target: 'email', source: 'email', validate: [{ rule: 'email' }] }],
@@ -329,13 +344,19 @@ test('@claim:email-domain-validation CLI rejects malformed email-domain boundari
 
   expect(result.status).toBe(2);
   expect(result.stderr).toBe('');
-  expect(JSON.parse(result.stdout)).toMatchObject({ status: 'review_required', rows: 4, validation_errors: 3 });
+  expect(JSON.parse(result.stdout)).toMatchObject({ status: 'review_required', rows: 9, validation_errors: 7 });
   const validation = JSON.parse(readFileSync(join(output, 'validation.json'), 'utf8'));
-  expect(validation).toMatchObject({ valid: false, error_count: 3 });
+  expect(readFileSync(join(output, 'output.csv'), 'utf8')).toContain('valid@example.com');
+  expect(readFileSync(join(output, 'output.csv'), 'utf8')).toContain('person+tag@sub.example.co');
+  expect(validation).toMatchObject({ valid: false, error_count: 7 });
   expect(validation.issues).toEqual(expect.arrayContaining([
-    expect.objectContaining({ source_row: 3, rule: 'email', value: 'a@.com' }),
-    expect.objectContaining({ source_row: 4, rule: 'email', value: 'a@example.' }),
-    expect.objectContaining({ source_row: 5, rule: 'email', value: 'a@b..com' }),
+    expect.objectContaining({ source_row: 4, rule: 'email', value: 'māya@example.com' }),
+    expect.objectContaining({ source_row: 5, rule: 'email', value: 'a b@example.com' }),
+    expect.objectContaining({ source_row: 6, rule: 'email', value: 'a@exa mple.com' }),
+    expect.objectContaining({ source_row: 7, rule: 'email', value: 'a@example' }),
+    expect.objectContaining({ source_row: 8, rule: 'email', value: 'a@.com' }),
+    expect.objectContaining({ source_row: 9, rule: 'email', value: 'a@example.' }),
+    expect.objectContaining({ source_row: 10, rule: 'email', value: 'a@b..com' }),
   ]));
 });
 
@@ -535,7 +556,7 @@ test('documentation and page copy retain every reviewed wording correction', asy
   expect(readme).not.toContain('SaaS account');
 
   const catalog = readFileSync(resolve('.factory/catalog-description.txt'), 'utf8').trim();
-  expect(catalog).toBe('Replay customer CSV imports before upload with field evidence and validation.');
+  expect(catalog).toBe('Replay customer CSV imports before upload with reviewed evidence and validation reports.');
   expect(catalog.length).toBeLessThanOrEqual(120);
 
   await page.goto('/');

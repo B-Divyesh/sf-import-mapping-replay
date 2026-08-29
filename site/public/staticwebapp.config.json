@@ -1,6 +1,5 @@
 {
   "routes": [
-    { "route": "/404", "statusCode": 404 },
     { "route": "/demo", "rewrite": "/demo.html" },
     { "route": "/privacy", "rewrite": "/privacy.html" },
     { "route": "/terms", "rewrite": "/terms.html" },

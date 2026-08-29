@@ -152,4 +152,4 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay customer CSV imports before upload with field evidence and validation.” (77 characters.)
+Catalog description: “Replay customer CSV imports before upload with reviewed evidence and validation reports.” (88 characters.)

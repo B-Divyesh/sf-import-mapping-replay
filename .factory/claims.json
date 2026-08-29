@@ -71,10 +71,10 @@
   },
   {
     "id": "email-domain-validation",
-    "claim": "Email validation rejects domains with a leading, trailing, or repeated dot.",
+    "claim": "Email validation accepts a supported ASCII local part and a domain with two or more labels, while rejecting spaces, non-ASCII values, one-label domains, and malformed domain dots.",
     "where": "README validation documentation",
     "test": "npm test -- --grep @claim:email-domain-validation",
-    "sandbox": "fresh temporary CSV with one supported address and a leading, trailing, and repeated-dot domain; assert exit 2 and three email issues"
+    "sandbox": "fresh temporary CSV with supported ASCII addresses plus non-ASCII, space, one-label, leading-dot, trailing-dot, and repeated-dot cases; assert the two accepted rows and one email issue for every rejected row"
   },
   {
     "id": "source-unchanged",
@@ -218,10 +218,10 @@
   },
   {
     "id": "site-routing-headers",
-    "claim": "The static configuration serves known routes, returns the custom 404 for unknown URLs, and sets security headers.",
+    "claim": "The static configuration serves known routes, returns the custom 404 for unknown URLs and /404 on GET and HEAD, and sets security headers.",
     "where": "README deploy section",
     "test": "npm test -- --grep @claim:site-routing-headers",
-    "sandbox": "built site served through the Azure Static Web Apps emulator; assert known route rewrites, unknown 404 response, custom page metadata, and all named security headers"
+    "sandbox": "built site served through the Azure Static Web Apps emulator; assert known route rewrites, GET and HEAD 404 responses for /404 and an unknown URL, custom page metadata, and all named security headers"
   },
   {
     "id": "mit-license",
