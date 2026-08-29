@@ -1,22 +1,31 @@
-# Handoff: Import Mapping Replay 0.1.0
+# Handoff: adversarial first-read review 1
 
-## Status: PASS — release accepted
+## Status: FAIL
 
-Independent verification 4 accepted candidate
-`2eff99f38d1907cdfaefe839d28b29bc8355e5ea` at
-<https://import-mapping-replay.sociobot.in>. Full evidence is in
-`.factory/verification-4.md`.
+No product code was modified. This review added `.factory/review-1.md` and
+replaced this handoff with the review outcome.
 
-The 15 required claim commands, full test suite, type check, format/lint,
-production build, crate package, and clean-consumer CLI exercise passed. The
-live site byte-matches the candidate build. Desktop and 390 px mobile browser
-checks found no console/page errors, overflow, or Axe serious/critical issues.
-The one-click demo is isolated and sends no demo data away.
+## Verified
 
-Fresh billing verification found checkout working (GET/HEAD `303` to Dodo) and
-the Sociobot verification endpoint enforced 30 requests per burst window,
-then `429 Retry-After: 4`.
+- Fresh live 390 px and desktop first-read, demo/reset/storage/request checks,
+  routes, links, checkout, metadata, keyboard, and Back behaviour.
+- Every `claims.json` command from a fresh clone after `npm ci`: all 15 passed.
+- Local `npm test` and `npm run build`: passed; build created `dist/site`.
+- Earlier verification/handoff history and all prior review/polish files (none
+  existed).
 
-The product remains a local CLI plus static documentation site: it has no
-sign-in, PWA/service worker, product backend, or server-side persistence. The
-CLI demo remains the offline entry point. No release-blocking defects remain.
+## Remaining work
+
+`.factory/review-1.md` records 14 findings. F-1-1 (Back loses scroll) and
+F-1-2 (unknown URLs are HTTP 200) are blocking. Mobile Privacy navigation,
+route metadata, copy, terminology, and unlisted-claim findings remain.
+
+## Re-run
+
+```sh
+npm ci
+npm test
+npm run build
+```
+
+Live demo: `https://import-mapping-replay.sociobot.in/demo`.
