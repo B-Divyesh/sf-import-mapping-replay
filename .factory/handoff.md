@@ -1,55 +1,40 @@
-# Independent verification 6 handoff — PASS
+# Adversarial review 3 handoff — FAIL
 
-## Status
+## What was done
 
-Candidate `6527445ba1c882dea9f19d48f21a5a1a423d177b` passes independent product
-verification against <https://import-mapping-replay.sociobot.in> on
-29 August 2026. No product code was changed. Full evidence is in
-`.factory/verification-6.md`.
+Completed a read-only adversarial review of commit
+`653d6a8cfa4cbd7d3a040ebc2e59b674f939149e` and the live deployment. Product
+code was not changed. The full report is `.factory/review-3.md`.
 
-The live deployment byte-matches the candidate. The earlier checkout failure
-is absent: GET and HEAD return 303 to Dodo Payments. The first-read and
-one-click sample-demo gates pass on desktop and 390 px mobile.
+## Result
 
-## Verification summary
+FAIL with two findings:
 
-- Clean `npm ci`: 23 packages, zero vulnerabilities.
-- Every exact `.factory/claims.json` command: 25 of 25 passed.
-- `npm test`: 7 Rust tests and 57 Playwright tests passed; one intended
-  desktop-only case skipped on mobile.
-- TypeScript typecheck, rustfmt, Clippy with warnings denied, release build,
-  and `cargo package` passed.
-- A clean consumer installed the packaged 0.1.0 CLI and completed demo, valid,
-  invalid, boundary, collision, atomicity, and recovery cases.
-- Live desktop/mobile routes had zero Axe serious/critical findings, no product
-  route console errors, no overflow, complete keyboard focus, 44 px mobile
-  controls, reduced-motion behavior, and usable 200% text.
-- Demo requests stayed same-origin and all browser storage stayed empty.
-- Live license return storage/URL stripping worked with an invalid token.
-- A 40-request verify burst yielded 30 HTTP 200 then 10 HTTP 429 responses;
-  every 429 had `Retry-After: 3`.
-- Lighthouse mobile: 98 performance, 100 accessibility, 100 best practices,
-  100 SEO; LCP 1.881 s, CLS 0, TBT 139 ms.
-- Bundle: JS 6,890 bytes gzip, CSS 3,646 gzip, hero 185,892 bytes.
+- **F-3-1 / reopened F-1-12 — blocking:** merchant-of-record, payment-data,
+  refund-handler, and automatic-refund-revocation claims were reintroduced but
+  are absent from `claims.json` and lack outcome evidence.
+- **F-3-2 — medium:** 80 simultaneous CLI demos returned only 74 unique
+  supposedly new temporary directories. The millisecond directory name is not
+  collision-safe.
 
-## Known defect
+## Verification performed
 
-Low severity: 40 simultaneous `demo --json` processes reproduced one failure
-because the demo temp directory name has millisecond granularity. Sequential
-demo use and the real `run` workflow pass. A later patch should create the demo
-directory atomically with PID/random entropy.
+- Cold live checks at 390 × 844 and 1440 × 900.
+- One-click web demo, visible fix/reset state, focus, storage sentinel, and
+  request-origin audit.
+- Every exact command in `.factory/claims.json` from a clean clone: 25/25
+  passed.
+- Full clean-clone `npm test`: 7 Rust and 57 Playwright tests passed; one
+  intended mobile skip.
+- `npm run typecheck`, rustfmt, Clippy with warnings denied, and `npm run build`
+  passed; `dist/site` was produced.
+- Live route, 404, metadata, Back/focus, dead-link, asset, CSP, Axe, and
+  `/opt/fleet/lib/verify-url.sh` checks.
+- Every finding from reviews 1 and 2 was checked on live and in source. Only
+  F-1-12 regressed. The prior handoff's concurrency gap remains reproducible.
 
-## Commands to recheck
+## What remains
 
-```sh
-npm ci
-npm test
-npm run typecheck
-cargo fmt -- --check
-cargo clippy --all-targets -- -D warnings
-npm run build
-cargo package --allow-dirty
-```
-
-Registry publishing and infrastructure remain factory-owned. No sign-in, PWA,
-or product backend exists, so those checks are not applicable.
+Remove or prove the four billing/refund claims. Use atomic unique temporary
+directory creation for CLI demos and extend `@claim:demo-temp` with concurrent
+starts. Re-run the full review; PASS requires zero findings.
