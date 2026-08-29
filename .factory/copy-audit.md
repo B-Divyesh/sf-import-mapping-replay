@@ -1,4 +1,4 @@
-# Copy audit — polish 4
+# Copy audit — polish 6
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -57,6 +57,7 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | A revoked license locks the team kit. | 7 | Pass |
 | Have a license? Paste it here / Verify license | 6 / 2 | Pass |
 | The core CLI does not need a license. | 8 | Pass |
+| Using the last valid check while verification is unavailable. | 9 | Pass: `license-unavailable-fallback` |
 | Read the privacy notice and terms. | 6 | Pass |
 | Replay local CSV mappings with review evidence. | 7 | Pass |
 | Privacy / Terms / Built by Param Factory | 1 / 1 / 4 | Pass |
@@ -119,7 +120,7 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | A malformed later row leaves no partial artifact. | 8 | Pass |
 | If a complete replay already exists, a failed rerun leaves all four prior files unchanged. | 15 | Pass |
 | npm run build creates the release binary and the static site in dist/site. | 13 | Pass: `build-artifacts` |
-| The site demo is available at /demo or /?demo=1 and uses only bundled sample data. | 15 | Pass |
+| The site demo is available at /?demo=1 or /demo and uses only bundled sample data. | 15 | Pass |
 | Deploy dist/site to Azure Static Web Apps. | 7 | Pass |
 | Its configuration serves known routes, returns the custom 404 for unknown URLs, and sets security headers. | 16 | Pass: `site-routing-headers` |
 | Production site: import-mapping-replay.sociobot.in | 3 | Pass: label, not a publication claim |
@@ -147,4 +148,4 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay customer CSV imports before upload with field-level evidence and validation.” (83 characters.)
+Catalog description: “Replay customer CSV imports before upload with field evidence and validation.” (77 characters.)

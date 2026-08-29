@@ -147,6 +147,13 @@
     "sandbox": "recorded verification response; reload within 24 hours, then age the cache beyond 24 hours and reload"
   },
   {
+    "id": "license-unavailable-fallback",
+    "claim": "If license verification is unavailable, the last valid result keeps the team kit available.",
+    "where": "landing team kit status",
+    "test": "npm test -- --grep @claim:license-unavailable-fallback",
+    "sandbox": "fresh browser context with an aged valid verdict and a recorded HTTP 503 verification response; assert the fallback status, visible download, one recheck, and unchanged cached verdict"
+  },
+  {
     "id": "core-no-license",
     "claim": "The core CLI completes a replay without a license.",
     "where": "landing facts, team kit, README",

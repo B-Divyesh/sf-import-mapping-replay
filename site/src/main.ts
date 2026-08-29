@@ -100,7 +100,7 @@ const landing = `
           <h1 id="page-title" tabindex="-1">Replay CSV imports before upload</h1>
           <p class="lede">For implementation engineers who need a reviewed output CSV and error report before each customer upload.</p>
           <div class="hero-action">
-            <a class="button" href="/demo" data-link>Try it with sample data</a>
+            <a class="button" href="/?demo=1" data-link>Try it with sample data</a>
             <span class="next-note">See a finished replay and three caught errors.</span>
           </div>
           <ul class="facts" aria-label="Product facts">

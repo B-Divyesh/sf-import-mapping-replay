@@ -15,7 +15,7 @@ const routes = [
   ['/privacy', 200, 'Privacy — Import Mapping Replay', 'Keep customer CSV files local', 'Read how the local CLI handles CSV files and how the website stores a team kit license.', '/privacy'],
   ['/terms', 200, 'Terms — Import Mapping Replay', 'Use replay files before uploading', 'Read the terms for the local Import Mapping Replay CLI and optional team mapping kit.', '/terms'],
   ['/404', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
-  ['/polish-5-not-found', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
+  ['/polish-6-not-found', 404, 'Page not found — Import Mapping Replay', 'Page not found', 'The requested Import Mapping Replay page was not found.', '/404'],
 ];
 
 mkdirSync(evidenceDir, { recursive: true });
@@ -29,7 +29,7 @@ async function waitFor(check, label, timeout = 5_000) {
 }
 
 const browser = await chromium.launch();
-const report = { baseUrl, routes: [], demo: {}, history: {}, consoleErrors: [] };
+const report = { baseUrl, routes: [], demo: {}, licenseFallback: {}, history: {}, consoleErrors: [] };
 
 try {
   for (const viewport of [{ name: 'desktop', width: 1440, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
@@ -82,7 +82,7 @@ try {
       assert.match(headers['content-security-policy'] || '', /frame-ancestors 'none'/, `${path} CSP`);
       assert.equal(headers['x-content-type-options'], 'nosniff', `${path} nosniff`);
       report.routes.push({ viewport: viewport.name, path, status: response?.status(), title, axeViolations: 0, horizontalOverflow: false });
-      if (path !== '/polish-5-not-found') {
+      if (path !== '/polish-6-not-found') {
         await page.screenshot({ path: join(evidenceDir, `${path === '/' ? 'home' : path.slice(1)}-${viewport.name}-cold.png`), fullPage: true });
       }
       await page.close();
@@ -151,6 +151,27 @@ try {
   report.demo.landingTransition = { storage: { [licenseKey]: 'REAL-SENTINEL' }, activeCrossOriginRequests: 0 };
   await raceContext.close();
 
+  const outageContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const outagePage = await outageContext.newPage();
+  const agedVerdict = { valid: true, checked: Date.now() - 86_400_001 };
+  await outagePage.addInitScript(({ licenseKey, verdictKey, agedVerdict }) => {
+    localStorage.setItem(licenseKey, 'OUTAGE-SENTINEL');
+    localStorage.setItem(verdictKey, JSON.stringify(agedVerdict));
+  }, { licenseKey, verdictKey, agedVerdict });
+  let outageChecks = 0;
+  await outagePage.route(`${billingUrl}?**`, route => {
+    outageChecks += 1;
+    return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'temporarily unavailable' }) });
+  });
+  await outagePage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+  assert.equal(await outagePage.getByText('Using the last valid check while verification is unavailable.').isVisible(), true);
+  assert.equal(await outagePage.getByRole('button', { name: 'Download team kit' }).isVisible(), true);
+  assert.equal(outageChecks, 1);
+  assert.deepEqual(JSON.parse(await outagePage.evaluate(key => localStorage.getItem(key), verdictKey)), agedVerdict);
+  report.licenseFallback = { status: 'cached valid result retained', downloadVisible: true, verificationStatus: 503, verificationChecks: 1 };
+  await outagePage.screenshot({ path: join(evidenceDir, 'license-fallback-mobile.png'), fullPage: true });
+  await outageContext.close();
+
   const homeContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const homePage = await homeContext.newPage();
   await homePage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
@@ -164,7 +185,7 @@ try {
   });
   const scrollBefore = await homePage.evaluate(() => window.scrollY);
   assert.ok(scrollBefore > 1_000, 'history test must begin below the first screen');
-  await homePage.evaluate(() => document.querySelector('a[href="/demo"]')?.click());
+  await homePage.evaluate(() => document.querySelector('a[href="/?demo=1"]')?.click());
   await homePage.goBack();
   await waitFor(async () => Math.abs((await homePage.evaluate(() => window.scrollY)) - scrollBefore) < 2, 'history scroll restoration');
   assert.equal(await homePage.locator('#page-title').evaluate(element => element === document.activeElement), true);

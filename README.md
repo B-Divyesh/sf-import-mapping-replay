@@ -80,7 +80,7 @@ npm test
 npm run build
 ```
 
-`npm run build` creates the release binary and the static site in `dist/site`. The site demo is available at `/demo` or `/?demo=1` and uses only bundled sample data.
+`npm run build` creates the release binary and the static site in `dist/site`. The site demo is available at `/?demo=1` or `/demo` and uses only bundled sample data.
 
 ## Deploy
 

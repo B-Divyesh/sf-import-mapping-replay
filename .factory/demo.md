@@ -1,6 +1,6 @@
 # Demo sandbox
 
-- Site entry: `https://import-mapping-replay.sociobot.in/demo` or `/?demo=1`.
+- Site entry: `https://import-mapping-replay.sociobot.in/?demo=1` or `/demo`.
 - CLI entry: `import-mapping-replay demo` or `cargo run -- demo`.
 - Sample: five fictional customer rows, four mapped target fields, and three deliberate validation errors.
 - Result: a transformed CSV, field evidence, validation report, and source-row rollback manifest.

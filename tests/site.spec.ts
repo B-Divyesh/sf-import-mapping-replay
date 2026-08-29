@@ -414,7 +414,7 @@ test('documentation and page copy retain every reviewed wording correction', asy
   expect(readme).not.toContain('SaaS account');
 
   const catalog = readFileSync(resolve('.factory/catalog-description.txt'), 'utf8').trim();
-  expect(catalog).toBe('Replay customer CSV imports before upload with field-level evidence and validation.');
+  expect(catalog).toBe('Replay customer CSV imports before upload with field evidence and validation.');
   expect(catalog.length).toBeLessThanOrEqual(120);
 
   await page.goto('/');
@@ -508,6 +508,25 @@ test('@claim:license-cache-day cached license is checked at most once in 24 hour
   });
   await page.reload();
   await expect.poll(() => verificationCount).toBe(2);
+});
+
+test('@claim:license-unavailable-fallback an aged valid result keeps the team kit available when verification fails', async ({ page }) => {
+  const cachedVerdict = { valid: true, checked: Date.now() - 86_400_001 };
+  await page.addInitScript(({ cachedVerdict }) => {
+    localStorage.setItem('sb_license:import-mapping-replay', 'outage-test-license');
+    localStorage.setItem('sb_license_verdict:import-mapping-replay', JSON.stringify(cachedVerdict));
+  }, { cachedVerdict });
+  let verificationCount = 0;
+  await page.route('https://api.sociobot.in/**', route => {
+    verificationCount += 1;
+    return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'temporarily unavailable' }) });
+  });
+
+  await page.goto('/');
+  await expect(page.getByText('Using the last valid check while verification is unavailable.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download team kit' })).toBeVisible();
+  expect(verificationCount).toBe(1);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('sb_license_verdict:import-mapping-replay') || 'null'))).toEqual(cachedVerdict);
 });
 
 test('@claim:revoked-license-lock a revoked license locks the team kit', async ({ page }) => {
@@ -607,7 +626,7 @@ test('correcting the sample keeps validation results, focus, and the live result
 test('demo first view shows a mapped value and a complete validation row on mobile', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Try it with sample data' }).click();
-  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page).toHaveURL(/\/\?demo=1$/);
   const snapshot = page.getByLabel('Sample replay result');
   for (const text of ['maya.rivera@northstar.example', 'email · not-an-email', 'Enter an email address.']) {
     await expect(snapshot.getByText(text, { exact: true })).toBeInViewport();
@@ -677,8 +696,8 @@ test('navigation restores scroll on Back and terminal recording has a clear acti
   });
   const savedScroll = await page.evaluate(() => window.scrollY);
   expect(savedScroll).toBeGreaterThan(1_000);
-  await page.evaluate(() => (document.querySelector<HTMLAnchorElement>('a[href="/demo"]') as HTMLAnchorElement).click());
-  await expect(page).toHaveURL(/\/demo$/);
+  await page.evaluate(() => (document.querySelector<HTMLAnchorElement>('a[href="/?demo=1"]') as HTMLAnchorElement).click());
+  await expect(page).toHaveURL(/\/\?demo=1$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
