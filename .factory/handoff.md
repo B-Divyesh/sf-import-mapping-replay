@@ -4,6 +4,7 @@ Completed on 29 August 2026 for work order
 `import-mapping-replay-polish-4`.
 
 - Product repair commit: `c43b67a4abdba18dc73f1e1f77802a597196938d`
+- Cumulative evidence/test commit: `d2e05d8dd9442ceb63b0a8afd7ab577fdd893ffa`
 - Branch: `main`, pushed to `origin`
 - Deployment: `c3c4247f-21a0-499a-ba84-909537a2e216`
 - Production: <https://import-mapping-replay.sociobot.in>
@@ -28,7 +29,8 @@ The cumulative mapping for F-1-1 through F-4-7 is in
 ## Clean-clone verification
 
 Clean clone:
-`/tmp/import-mapping-replay-polish4-clean.NTBgZ6/repo` at the repair commit.
+`/tmp/import-mapping-replay-polish4-final.oo7qTX/repo` at the cumulative
+evidence/test commit.
 
 After `npm ci`, every exact `test` command in `.factory/claims.json` ran
 independently. Result: **28/28 passed**. Each claim id occurs in exactly one

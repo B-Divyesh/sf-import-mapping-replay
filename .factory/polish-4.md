@@ -6,7 +6,8 @@ Deployment: `c3c4247f-21a0-499a-ba84-909537a2e216` at
 
 Evidence files are retained under `.factory/evidence/polish-4/`. The clean
 clone used for the 28 independent claim commands was
-`/tmp/import-mapping-replay-polish4-clean.NTBgZ6/repo`.
+`/tmp/import-mapping-replay-polish4-final.oo7qTX/repo` at
+`d2e05d8dd9442ceb63b0a8afd7ab577fdd893ffa`.
 
 ## Review 4 findings
 
