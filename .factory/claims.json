@@ -82,5 +82,26 @@
     "where": "privacy page",
     "test": "npm test -- --grep @claim:license-privacy",
     "sandbox": "fresh browser context; intercept the verification request and inspect localStorage"
+  },
+  {
+    "id": "core-no-license",
+    "claim": "The core CLI completes a replay without a license.",
+    "where": "landing facts, team kit, README",
+    "test": "npm test -- --grep @claim:core-no-license",
+    "sandbox": "fresh temporary directory; run the bundled valid CSV replay with no license or account configuration"
+  },
+  {
+    "id": "rust-msrv",
+    "claim": "The package declares Rust 1.85 as its minimum compiler.",
+    "where": "landing install section, README",
+    "test": "npm test -- --grep @claim:rust-msrv",
+    "sandbox": "read Cargo metadata from a fresh checkout and assert rust_version is 1.85"
+  },
+  {
+    "id": "revoked-license-lock",
+    "claim": "A revoked license locks the team kit.",
+    "where": "landing team kit",
+    "test": "npm test -- --grep @claim:revoked-license-lock",
+    "sandbox": "fresh browser context; recorded valid then revoked Sociobot verification responses"
   }
 ]

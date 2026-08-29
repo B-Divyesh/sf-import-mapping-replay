@@ -47,6 +47,24 @@ test('@claim:cli-offline @claim:demo-temp CLI replays bundled data without a ser
   expect(readFileSync(result.output_csv, 'utf8')).toContain('maya.rivera@northstar.example');
 });
 
+test('@claim:core-no-license the core CLI completes a replay without a license', async () => {
+  const out = mkdtempSync(join(tmpdir(), 'replay-no-license-'));
+  const result = JSON.parse(execFileSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', resolve('examples/valid-customers.csv'), '--mapping', resolve('examples/mapping.json'), '--out-dir', out, '--json',
+  ], {
+    encoding: 'utf8',
+    env: { ...process.env, SB_LICENSE_IMPORT_MAPPING_REPLAY: '', SOCIOBOT_LICENSE: '' },
+  }));
+  expect(result).toMatchObject({ status: 'valid', rows: 3, validation_errors: 0 });
+  expect(readFileSync(join(out, 'output.csv'), 'utf8')).toContain('C-1042,maya@northstar.example,2025-04-18,growth');
+});
+
+test('@claim:rust-msrv package metadata declares Rust 1.85 as the minimum compiler', async () => {
+  const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--format-version', '1'], { encoding: 'utf8' }));
+  const packageMetadata = metadata.packages.find((item: { name: string }) => item.name === 'import-mapping-replay');
+  expect(packageMetadata?.rust_version).toBe('1.85');
+});
+
 test('@claim:cli-replay @claim:mapping-v1 @claim:source-unchanged @claim:json-output CLI writes deterministic transformed output and manifests', async () => {
   const out = mkdtempSync(join(tmpdir(), 'replay-claim-'));
   const source = resolve('examples/valid-customers.csv');
@@ -110,6 +128,26 @@ test('@claim:paid-kit @claim:license-privacy license verification reveals the £
   const kit = JSON.parse(readFileSync(path!, 'utf8'));
   expect(kit.recipes).toHaveLength(5);
   expect(kit.review).toHaveLength(4);
+});
+
+test('@claim:revoked-license-lock a revoked license locks the team kit', async ({ page }) => {
+  let verificationCount = 0;
+  await page.route('https://api.sociobot.in/**', route => {
+    verificationCount += 1;
+    const result = verificationCount === 1
+      ? { valid: true, reason: 'ok', expires_at: null }
+      : { valid: false, reason: 'revoked', expires_at: null };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(result) });
+  });
+  await page.goto('/');
+  await page.getByLabel('Have a license? Paste it here').fill('revoked-license-test');
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('License active. The team kit is ready.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download team kit' })).toBeVisible();
+  await page.getByRole('button', { name: 'Verify license' }).click();
+  await expect(page.getByText('License no longer active. Check the token or buy the team kit.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download team kit' })).toBeHidden();
+  expect(verificationCount).toBe(2);
 });
 
 test('@claim:actionable-errors invalid input exits non-zero and names the next step', async () => {

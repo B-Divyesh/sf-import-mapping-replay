@@ -14,7 +14,7 @@ The command copies a realistic customer CSV and mapping into a new temporary dir
 
 ## Install
 
-Build the single binary with Rust 1.85 or newer:
+This package declares Rust 1.85 as its minimum compiler:
 
 ```sh
 cargo install --path .
@@ -88,7 +88,7 @@ Deploy `dist/site` to a static host with SPA fallbacks enabled. The included Azu
 
 CSV processing runs in the local binary. The CLI has no telemetry and makes no network requests. The website stores only a pasted license and its last verification result in your browser. See the site’s `/privacy` and `/terms` pages.
 
-The CLI is free and has no row limit. A one-time £24 license provides mapping recipes and a sign-off checklist.
+The core CLI needs no license. A one-time £24 license provides mapping recipes and a sign-off checklist.
 
 ## License
 

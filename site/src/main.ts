@@ -74,7 +74,7 @@ const landing = `
           <ul class="facts" aria-label="Product facts">
             <li>CSV files stay on your computer.</li>
             <li>The CLI runs without internet.</li>
-            <li>Replay costs £0. The team kit costs £24 once.</li>
+            <li>The core CLI needs no license. The team kit costs £24 once.</li>
           </ul>
         </div>
         <figure class="poster-frame">
@@ -113,7 +113,7 @@ const landing = `
         <div>
           <p class="eyebrow">Install locally</p>
           <h2 id="install-title">Build one binary</h2>
-          <p>Rust 1.85 or newer builds the CLI. No account is required.</p>
+          <p>This package declares Rust 1.85 as its minimum compiler. No account is required.</p>
           <div class="terminal"><pre><span class="prompt">$ cargo install --git https://github.com/B-Divyesh/sf-import-mapping-replay</span>
 $ import-mapping-replay demo</pre></div>
         </div>
@@ -121,7 +121,7 @@ $ import-mapping-replay demo</pre></div>
           <h3>This tool stays narrow</h3>
           <ul class="plain-list">
             <li>It does not connect to a SaaS account.</li>
-            <li>It does not schedule or upload imports.</li>
+            <li>It processes a source CSV when you run the command.</li>
             <li>It does not change a source CSV.</li>
             <li>A rollback manifest cannot undo records imported elsewhere.</li>
           </ul>
@@ -135,7 +135,7 @@ $ import-mapping-replay demo</pre></div>
         <div>
           <p class="eyebrow">Optional team kit</p>
           <h2 id="price-title">Standardise the review handoff</h2>
-          <p>The CLI stays free. The team kit adds mapping recipes and a sign-off checklist.</p>
+          <p>The core CLI needs no license. The team kit adds mapping recipes and a sign-off checklist.</p>
           <ul class="plain-list"><li>Five mapping recipes for common template fields.</li><li>A review checklist with owner and approval fields.</li></ul>
         </div>
         <div class="price-ticket">
@@ -143,11 +143,11 @@ $ import-mapping-replay demo</pre></div>
           <p class="price">£24</p>
           <p>One-time purchase. Sociobot and Dodo are the merchant of record.</p>
           <a class="button" href="https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout">Buy the team kit <span class="sr-only">at hosted checkout</span></a>
-          <p><small>Refunds are handled by the merchant. A refund revokes the license.</small></p>
+          <p><small>Refunds are handled by the merchant. A revoked license locks the team kit.</small></p>
           <form id="license-form" class="license-form">
             <label for="license">Have a license? Paste it here</label>
             <div class="license-row"><input id="license" name="license" type="password" autocomplete="off"><button class="button secondary" type="submit">Verify license</button></div>
-            <div id="license-status" class="license-status" aria-live="polite">The free CLI does not need a license.</div>
+            <div id="license-status" class="license-status" aria-live="polite">The core CLI does not need a license.</div>
           </form>
           <div id="kit-panel" class="kit-panel" hidden><p>Your team kit is ready on this device.</p><button id="download-kit" class="button secondary" type="button">Download team kit</button></div>
           <p><small>Read the <a href="/privacy" data-link>privacy notice</a> and <a href="/terms" data-link>terms</a>.</small></p>
