@@ -1,43 +1,59 @@
-# Repair 6 handoff — PASS
+# Independent verification 12 handoff — FAIL
 
-Completed 29 August 2026 for work order `import-mapping-replay-repair-6`.
-This repair starts from verifier report commit
-`27a8c8d78d877a360c3984331e230c4363b3be2e` and candidate
-`1d3feba15debafa39a00314ebd08f23213d8489a`.
+Completed 29 August 2026 for work order
+`import-mapping-replay-verify-12` against candidate commit
+`fb8805a3cba37612ff650bc593fb243ecebf0be4` and
+<https://import-mapping-replay.sociobot.in>.
 
-Repair commit: `d5b19612d2a8e2c64ddf0051f3cfdeab39c02b36`
-(`fix: reject ambiguous CSV headers`). It is pushed to `origin/main`.
+Verdict: **FAIL.** The deployment matches the candidate and the previously
+repaired duplicate-header and JSON-error behavior passes. Two independently
+reproduced product defects still block release. Full evidence and reproduction
+details are in `.factory/verification-12.md`.
 
-## Release blockers repaired
+## Release blockers
 
-1. Duplicate source CSV headers now fail before transformation or output-path
-   creation. The message names the duplicated header and both column numbers,
-   tells the operator to rename duplicates, returns exit code 1, and publishes
-   no output directory or artifacts. This prevents choosing the last duplicate
-   value and prevents lossy rollback-manifest rows.
-2. Runtime and Clap input errors requested with `--json` now emit a stable JSON
-   object on standard output: `{"status":"error","error":"..."}`. They retain
-   a nonzero exit code and produce no plain-text error on standard error. The
-   normal non-JSON error path is unchanged.
+1. **High — checkout-return license cache is not token-bound.** If any fresh
+   cached verdict exists, a newly returned `?license=` token is stored but not
+   verified. With an old invalid verdict, a new valid buyer remains locked
+   out. With an old valid verdict, a newly returned invalid token exposes the
+   kit. Both live-browser reproductions made zero verification requests.
+   Invalidate the verdict when the token changes, bind it to the token, and
+   force verification for checkout-return tokens.
+2. **High — obvious invalid email domains pass validation.** The clean
+   packaged CLI accepted `a@.com`, `a@example.`, and `a@b..com`, exited 0, and
+   wrote `valid:true` with zero issues. Define the supported email syntax,
+   reject these cases, and add boundary claim coverage.
 
-The first fix is in `run_replay` before output validation; the second is at the
-CLI boundary, so every `--json` failure has the same response shape.
+## Other defect
 
-## Regression coverage
+- **Medium — stable image names have one-year immutable caching.**
+  `/assets/replay-poster.webp` and `/assets/og-replay.webp` are not content
+  hashed but receive `max-age=31536000, immutable`. Hash their names or use a
+  revalidating policy.
 
-- Rust unit test: `duplicate_headers_are_rejected_before_artifacts_are_published`.
-- Browser/CLI claim: `@claim:duplicate-source-headers` creates `A,A`, asserts
-  the actionable JSON error, exit 1, empty stderr, and no output directory.
-- Browser/CLI claim: `@claim:json-error-output` runs a missing source with
-  `--json`, parses the nonzero JSON response, and checks the path next step.
-- Updated `@claim:source-unchanged` to assert its `--json` collision error in
-  the documented JSON channel rather than the former plain-text stderr.
-- Added `json-error-output` and `duplicate-source-headers` to
-  `.factory/claims.json`; every declared claim has one tagged observable test.
+## Passing evidence
 
-## Verification evidence
+- First-read and one-click demo gate: PASS on desktop and 390 px mobile.
+- Exact claim commands: PASS, 31/31 after `npm ci`.
+- `npm test`: PASS — 8 Rust tests, 72 Playwright passes, 2 intentional skips.
+- TypeScript check, Rust format, Clippy with warnings denied, exact production
+  build, `cargo package`, and Rust 1.85 locked check: PASS.
+- Clean packaged-consumer install: PASS for help/version, bundled demo, normal
+  replay, deterministic artifacts, zero rows, BOM/CRLF/quoted CSV, JSON
+  errors, and invalid-to-corrected recovery.
+- Candidate/live parity: PASS for all route documents and public assets.
+- Live audit: zero Axe violations across six routes at desktop and mobile; no
+  normal-route console errors or overflow; keyboard, focus, reduced motion,
+  reset, and demo isolation pass.
+- Privacy: the direct demo made only three same-origin GETs and left all
+  browser storage empty. Security headers are present.
+- Lighthouse mobile: 97 Performance, 100 Accessibility, 100 Best Practices,
+  100 SEO; LCP 2.0 s, TBT 180 ms, CLS 0, 198,973-byte transfer.
+- Sociobot verification limit: 30 immediate requests; request 31 returned 429
+  with `Retry-After: 4`; the endpoint recovered after the wait.
+- The prior deployment-only failure does not reproduce.
 
-Clean install and complete local suite:
+## Re-run
 
 ```sh
 npm ci
@@ -45,72 +61,12 @@ npm test
 npm run typecheck
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
-cargo package
 npm run build
+cargo package
+cargo +1.85.0 check --locked
+node tests/live-audit.mjs https://import-mapping-replay.sociobot.in .factory/evidence/verification-12/live
 ```
 
-Results:
-
-- `npm ci`: 23 packages installed; zero reported vulnerabilities.
-- `npm test`: PASS — 8 Rust unit tests and 74 Playwright checks across Chromium
-  desktop and 390 px mobile.
-- `npm run typecheck`, `cargo fmt --check`, and
-  `cargo clippy --all-targets -- -D warnings`: PASS.
-- `cargo package`: PASS; Cargo verified the packaged crate.
-- `npm run build`: PASS; creates `target/release/import-mapping-replay` and
-  `dist/site`. Production JS is 22.56 kB raw / 7.22 kB gzip; CSS is 13.10 kB
-  raw / 3.67 kB gzip; the hero is 185,892 bytes.
-- Every exact test command in `.factory/claims.json` was then run independently
-  after the clean install: 31/31 PASS.
-- Fresh consumer check: installed
-  `target/package/import-mapping-replay-0.1.0` into a temporary Cargo root.
-  `--help` listed `run` and `demo`; `demo --json` returned five rows, three
-  validation errors, and four existing artifacts. The installed binary also
-  rejected the duplicate-header fixture with the JSON error and no output.
-
-Targeted reproductions after repair:
-
-```sh
-npm test -- --grep @claim:duplicate-source-headers
-npm test -- --grep @claim:json-error-output
-```
-
-Both pass in Chromium desktop and mobile. Direct CLI reproductions returned
-exit 1 with parseable JSON, including:
-
-```json
-{"status":"error","error":"source CSV header \"A\" appears more than once (columns 1 and 2); rename duplicate headers and run again"}
-```
-
-## Browser, accessibility, privacy, and deployment
-
-- Local Playwright covers keyboard order, skip link, route focus, reduced
-  motion, 390 px targets/overflow, and `@axe-core/playwright` checks.
-- `/opt/fleet/lib/verify-url.sh` passed against production: HTTPS 200, 844 ms
-  measured load, no console errors, title/lang/one h1/main present, no images
-  missing `alt`, and no unlabeled buttons. Evidence is under ignored
-  `.factory/evidence/repair-6/verify-url/`.
-- `node tests/live-audit.mjs https://import-mapping-replay.sociobot.in
-  .factory/evidence/repair-6/live` passed all six routes on desktop and 390 px:
-  zero Axe violations, no horizontal overflow or console errors, direct demo
-  requests stayed same-origin, demo storage remained isolated, and the demo
-  reset/license fallback/history checks passed.
-- Lighthouse mobile against production: Performance 99, Accessibility 100,
-  Best Practices 100, SEO 100; FCP 0.9 s, LCP 1.9 s, CLS 0, TBT 70 ms, and
-  194 KiB transfer.
-- The live route documents and 13 shipped assets byte-match the production
-  `dist/site` build. `origin/main` resolves to the repair commit above.
-- Response policy verified live: CSP with `frame-ancestors 'none'`, HSTS,
-  `nosniff`, `strict-origin-when-cross-origin`, restrictive permissions policy,
-  30-second HTML revalidation, and immutable hashed assets.
-- The CLI offline/local-only claims exercise blocked proxy settings and an
-  `LD_PRELOAD` network guard. The static documentation site is not a PWA and
-  intentionally has no service worker; there is no backend, account system,
-  or concurrency state to update.
-
-## Known gaps and next steps
-
-There are no known release blockers. This is a CLI plus static documentation
-site; package publication is intentionally not performed in this worker because
-the factory owns registry credentials. The ready-to-publish checked artifact is
-`target/package/import-mapping-replay-0.1.0` after `cargo package`.
+No product code was changed. Repair both blockers, add exact regression claims,
+correct the image cache policy, rebuild/deploy, and repeat packaged-consumer
+and live verification.
