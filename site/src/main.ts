@@ -156,7 +156,6 @@ $ import-mapping-replay demo</pre></div>
           <h3>Team mapping kit</h3>
           <p class="price">£24</p>
           <p>One-time purchase. Checkout opens through Sociobot on Dodo Payments.</p>
-          <p><small>Dodo Payments is the merchant of record and handles refunds. A refund revokes the license automatically.</small></p>
           <a class="button" href="https://api.sociobot.in/api/v1/products/import-mapping-replay/checkout">Buy the team kit <span class="sr-only">at hosted checkout</span></a>
           <p><small>A revoked license locks the team kit.</small></p>
           <form id="license-form" class="license-form">
@@ -210,7 +209,7 @@ const privacy = `
     <section class="section"><div class="section-inner prose">
       <h2>What the CLI handles</h2><p>The CLI reads the source CSV and mapping you name. It writes results to your chosen output directory.</p><p>The CLI makes no network requests while replaying a CSV.</p>
       <h2>What the website stores</h2><p>The demo uses bundled sample data and stores nothing. A pasted license is stored in this browser under <code>sb_license:import-mapping-replay</code>.</p><p>The site sends that license only to the Sociobot verification endpoint. The cached result is checked at most once each day.</p>
-      <h2>What checkout handles</h2><p>Checkout opens through Sociobot on Dodo Payments. Dodo Payments is the merchant of record and handles payment data.</p><p>After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot.</p><p>Dodo Payments handles refunds. A refund revokes the license automatically.</p>
+      <h2>What checkout handles</h2><p>Checkout opens through Sociobot on Dodo Payments.</p><p>After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot.</p>
       <h2>Remove stored data</h2><p>Clear this site’s browser storage to remove the license and cached result.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;
@@ -222,7 +221,7 @@ const terms = `
     <section class="section"><div class="section-inner prose">
       <h2>Local utility</h2><p>Import Mapping Replay transforms files you provide. You remain responsible for the source data, mapping, and final upload.</p>
       <h2>Rollback scope</h2><p>The rollback manifest preserves source rows from one local run. It cannot delete or change records in another product.</p>
-      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens through Sociobot on Dodo Payments.</p><p>Dodo Payments is the merchant of record and handles refunds. A refund revokes the license automatically.</p><p>The site stores a returned license, removes it from the address bar, and verifies it with Sociobot.</p>
+      <h2>Team kit purchase</h2><p>The team kit costs £24 as a one-time purchase. Checkout opens through Sociobot on Dodo Payments.</p><p>The site stores a returned license, removes it from the address bar, and verifies it with Sociobot.</p>
       <h2>Software terms</h2><p>The CLI is provided under the MIT License. The software is provided without warranty, as the license explains.</p><p>Last updated: 29 August 2026.</p>
     </div></section>
   </main>${footer}`;

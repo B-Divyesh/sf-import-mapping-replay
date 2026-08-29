@@ -53,7 +53,7 @@
     "claim": "The CLI demo copies bundled sample data into a new temporary directory.",
     "where": "README and demo documentation",
     "test": "npm test -- --grep @claim:demo-temp",
-    "sandbox": "bundled CLI demo; assert the reported demo directory and output exist"
+    "sandbox": "start 40 bundled CLI demos concurrently; assert 40 distinct reported directories, bundled inputs, and four non-empty review files"
   },
   {
     "id": "cli-replay",

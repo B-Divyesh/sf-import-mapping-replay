@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -9,6 +9,28 @@ const checkoutUrl = 'https://api.sociobot.in/api/v1/products/import-mapping-repl
 
 function runBundledDemo(): Record<string, string | number> {
   return JSON.parse(execFileSync(resolve('target/debug/import-mapping-replay'), ['demo', '--json'], { encoding: 'utf8' }));
+}
+
+function runBundledDemoConcurrently(): Promise<Record<string, string | number>> {
+  return new Promise((resolveDemo, rejectDemo) => {
+    const child = spawn(resolve('target/debug/import-mapping-replay'), ['demo', '--json']);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', chunk => { stdout += String(chunk); });
+    child.stderr.on('data', chunk => { stderr += String(chunk); });
+    child.on('error', rejectDemo);
+    child.on('close', code => {
+      if (code !== 0) {
+        rejectDemo(new Error(`bundled demo exited ${code}: ${stderr}`));
+        return;
+      }
+      try {
+        resolveDemo(JSON.parse(stdout));
+      } catch (error) {
+        rejectDemo(error);
+      }
+    });
+  });
 }
 
 function networkGuard(root: string): { library: string; log: string } {
@@ -90,11 +112,24 @@ test('@claim:cli-offline CLI replays bundled data without a service or account',
   expect(readFileSync(result.output_csv, 'utf8')).toContain('maya.rivera@northstar.example');
 });
 
-test('@claim:demo-temp CLI demo copies bundled data into a fresh temporary directory', async () => {
-  const result = runBundledDemo();
-  expect(String(result.demo_directory)).toContain('import-mapping-replay-demo-');
-  expect(existsSync(join(String(result.demo_directory), 'customers.csv'))).toBe(true);
-  expect(existsSync(join(String(result.demo_directory), 'mapping.json'))).toBe(true);
+test('@claim:demo-temp concurrent CLI demos each receive an isolated temporary directory', async () => {
+  const results = await Promise.all(Array.from({ length: 40 }, () => runBundledDemoConcurrently()));
+  const directories = results.map(result => String(result.demo_directory));
+  expect(new Set(directories).size).toBe(40);
+  for (const result of results) {
+    const directory = String(result.demo_directory);
+    expect(directory).toContain('import-mapping-replay-demo-');
+    expect(existsSync(join(directory, 'customers.csv'))).toBe(true);
+    expect(existsSync(join(directory, 'mapping.json'))).toBe(true);
+    for (const artifact of [result.output_csv, result.evidence, result.validation, result.rollback_manifest]) {
+      expect(existsSync(String(artifact))).toBe(true);
+      expect(readFileSync(String(artifact), 'utf8').trim()).not.toBe('');
+    }
+    expect(readFileSync(String(result.output_csv), 'utf8').trim().split('\n')).toHaveLength(6);
+    expect(JSON.parse(readFileSync(String(result.evidence), 'utf8'))).toMatchObject({ source_rows: 5, output_rows: 5 });
+    expect(JSON.parse(readFileSync(String(result.validation), 'utf8'))).toMatchObject({ error_count: 3, valid: false });
+    expect(JSON.parse(readFileSync(String(result.rollback_manifest), 'utf8')).rows).toHaveLength(5);
+  }
 });
 
 test('@claim:cli-local-only CLI replay makes no network call', async () => {
@@ -277,16 +312,12 @@ test('@claim:license-return-storage @claim:license-url-stripping checkout return
   expect(verifyUrl).toBe('https://api.sociobot.in/api/v1/products/import-mapping-replay/verify?license=returned-secret');
 });
 
-test('purchase copy names the merchant of record and refund handling', async ({ page }) => {
-  for (const path of ['/', '/terms']) {
+test('purchase copy keeps only the checkout behavior covered by evidence', async ({ page }) => {
+  for (const path of ['/', '/privacy', '/terms']) {
     await page.goto(path);
-    await expect(page.getByText('Dodo Payments is the merchant of record and handles refunds.')).toBeVisible();
-    await expect(page.getByText('A refund revokes the license automatically.')).toBeVisible();
+    await expect(page.getByText('Checkout opens through Sociobot on Dodo Payments.')).toBeVisible();
+    await expect(page.getByText(/merchant of record|handles refunds|payment data|refund revokes/i)).toHaveCount(0);
   }
-  await page.goto('/privacy');
-  await expect(page.getByText('Dodo Payments is the merchant of record and handles payment data.')).toBeVisible();
-  await expect(page.getByText('Dodo Payments handles refunds.')).toBeVisible();
-  await expect(page.getByText('A refund revokes the license automatically.')).toBeVisible();
 });
 
 test('@claim:paid-kit @claim:license-privacy license verification reveals the £24 team kit download', async ({ page }) => {

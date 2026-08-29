@@ -1,11 +1,14 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use import_mapping_replay::{run_replay, RunReport};
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{self, ExitCode};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static DEMO_DIRECTORY_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Parser)]
 #[command(name = "import-mapping-replay", version, about = "Replay CSV mappings with reviewable evidence", long_about = None)]
@@ -90,6 +93,37 @@ fn display(report: &RunReport, json: bool, demo_directory: Option<&Path>) -> Res
     Ok(())
 }
 
+/// Create a persistent, exclusive directory for one bundled demo run.
+///
+/// `create_dir` is atomic. The process id, nanosecond clock value, and local
+/// sequence make a collision vanishingly unlikely; an existing directory is
+/// still retried rather than shared. The directory intentionally persists so
+/// users can inspect the four output files printed by `demo`.
+fn create_demo_directory() -> Result<PathBuf> {
+    let temporary_root = std::env::temp_dir();
+    for _ in 0..128 {
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+        let sequence = DEMO_DIRECTORY_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let directory = temporary_root.join(format!(
+            "import-mapping-replay-demo-{}-{timestamp}-{sequence}",
+            process::id()
+        ));
+        match fs::create_dir(&directory) {
+            Ok(()) => return Ok(directory),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(error).with_context(|| {
+                    format!("could not create demo directory {}", directory.display())
+                });
+            }
+        }
+    }
+    bail!(
+        "could not create a unique demo directory in {}",
+        temporary_root.display()
+    )
+}
+
 fn main() -> ExitCode {
     match execute() {
         Ok(code) => code,
@@ -118,10 +152,7 @@ fn execute() -> Result<ExitCode> {
             })
         }
         Command::Demo { json } => {
-            let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
-            let root = std::env::temp_dir().join(format!("import-mapping-replay-demo-{nonce}"));
-            fs::create_dir_all(&root)
-                .with_context(|| format!("could not create demo directory {}", root.display()))?;
+            let root = create_demo_directory()?;
             let source = root.join("customers.csv");
             let mapping = root.join("mapping.json");
             fs::write(&source, include_bytes!("../examples/customers.csv"))?;

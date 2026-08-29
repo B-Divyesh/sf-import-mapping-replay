@@ -92,7 +92,7 @@ CSV processing runs in the local binary. The CLI makes no network requests while
 
 The core CLI needs no license. A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields.
 
-The buy link opens Dodo Payments checkout through Sociobot. Dodo Payments is the merchant of record and handles refunds. A refund revokes the license automatically. After checkout, the site stores the returned license in `localStorage`, removes it from the address bar, and verifies it with Sociobot.
+The buy link opens Dodo Payments checkout through Sociobot. After checkout, the site stores the returned license in `localStorage`, removes it from the address bar, and verifies it with Sociobot.
 
 ## License
 

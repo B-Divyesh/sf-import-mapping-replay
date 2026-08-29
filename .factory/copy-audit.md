@@ -1,4 +1,4 @@
-# Copy audit — repair 4
+# Copy audit — polish 3
 
 Counts use space-separated words. Code, JSON keys, filenames, prices, and single numbers are counted as interface fragments. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -53,8 +53,6 @@ Counts use space-separated words. Code, JSON keys, filenames, prices, and single
 | A review checklist with upload owner and second-engineer approval fields. | 10 | Pass |
 | Team mapping kit / One-time purchase. | 3 / 2 | Pass |
 | Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
-| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
-| A refund revokes the license automatically. | 7 | Pass |
 | Buy the team kit | 4 | Pass |
 | A revoked license locks the team kit. | 7 | Pass |
 | Have a license? Paste it here / Verify license | 6 / 2 | Pass |
@@ -87,11 +85,7 @@ The demo, Privacy, Terms, and 404 routes were extracted from rendered pages. No 
 | New or changed copy | Words | Result |
 | --- | ---: | --- |
 | Checkout opens through Sociobot on Dodo Payments. | 7 | Pass |
-| Dodo Payments is the merchant of record and handles payment data. | 11 | Pass |
 | After checkout, this site stores the returned license, removes it from the address bar, and verifies it with Sociobot. | 19 | Pass |
-| Dodo Payments handles refunds. | 5 | Pass |
-| A refund revokes the license automatically. | 7 | Pass |
-| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
 | The site stores a returned license, removes it from the address bar, and verifies it with Sociobot. | 17 | Pass |
 
 The route headings remain literal: “Review a finished CSV replay”, “Keep customer CSV files local”, “Use replay files before uploading”, and “Page not found”.
@@ -135,8 +129,6 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | The core CLI needs no license. | 6 | Pass |
 | A one-time £24 license provides five named mapping recipes and a checklist with upload owner and second-engineer approval fields. | 19 | Pass |
 | The buy link opens Dodo Payments checkout through Sociobot. | 9 | Pass |
-| Dodo Payments is the merchant of record and handles refunds. | 10 | Pass |
-| A refund revokes the license automatically. | 7 | Pass |
 | After checkout, the site stores the returned license in localStorage, removes it from the address bar, and verifies it with Sociobot. | 21 | Pass |
 
 ## Terminology
@@ -153,4 +145,4 @@ The route headings remain literal: “Review a finished CSV replay”, “Keep c
 | Paid download | team kit |
 | Purchase proof | license |
 
-Catalog description: “Replay customer CSV imports into reviewed output and error files before upload.” (79 characters.)
+Catalog description: “Replay CSV imports into an output file and error report before upload.” (70 characters.)

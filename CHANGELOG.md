@@ -4,7 +4,12 @@
 
 - Reject source or mapping paths that refer to any generated artifact.
 - Stage every replay artifact before publishing and preserve complete prior results when a run fails.
-- Add exact checkout-return claims and identify Dodo Payments as merchant of record and refund handler.
+- Add exact checkout-return claims.
+
+## 0.1.0 polish 3 — 2026-08-29
+
+- Remove unverified merchant, payment-data, refund, and refund-revocation wording.
+- Give every concurrent CLI demo an atomically created temporary directory.
 
 ## 0.1.0 polish 1 — 2026-08-29
 
