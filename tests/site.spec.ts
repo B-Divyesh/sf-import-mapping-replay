@@ -470,6 +470,29 @@ test('direct demo query is isolated and exposes reset and exit controls', async 
   expect(await page.evaluate(() => localStorage.getItem('sb_license:import-mapping-replay'))).toBe('real-license-sentinel');
 });
 
+test('correcting the sample keeps validation results, focus, and the live result in sync', async ({ page }) => {
+  await page.goto('/demo');
+  const fix = page.getByRole('button', { name: 'Fix the sample email' });
+  await fix.focus();
+  await expect(fix).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('#demo-error-count')).toHaveText('2');
+  await expect(page.locator('#demo-summary-line')).toHaveText('Five sample customers · two errors');
+  await expect(page.locator('#demo-validation-summary')).toHaveText('Two sample validation errors remain.');
+  await expect(page.locator('.issue-table tbody tr')).toHaveCount(2);
+  await expect(page.locator('.issue-table')).not.toContainText('not-an-email');
+  await expect(page.locator('.issue-table')).toContainText('C-1043');
+  await expect(page.locator('.issue-table')).toContainText('legacy');
+  await expect(page.getByRole('button', { name: 'Sample email corrected' })).toBeDisabled();
+
+  const result = page.locator('#demo-correction-status');
+  await expect(result).toHaveAttribute('role', 'status');
+  await expect(result).toHaveAttribute('aria-atomic', 'true');
+  await expect(result).toHaveText('Row 5 corrected. Two validation errors remain.');
+  await expect(result).toBeFocused();
+});
+
 test('demo first view shows a mapped value and a complete validation row on mobile', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Try it with sample data' }).click();

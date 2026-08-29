@@ -23,15 +23,33 @@ Value is not allowed; use starter, growth, or enterprise.
 <span class="ok">Wrote output.csv, evidence.json,
 validation.json, rollback-manifest.json</span>`;
 
-const demoSnapshot = (fixed = false) => `
-  <div class="demo-snapshot" aria-label="Sample replay result">
+type DemoIssue = { row: string; field: string; value: string; fix: string };
+
+const demoIssues: DemoIssue[] = [
+  { row: '5', field: 'email', value: 'not-an-email', fix: 'Enter an email address.' },
+  { row: '6', field: 'external_id', value: 'C-1043', fix: 'Use an ID not found on row 3.' },
+  { row: '6', field: 'plan', value: 'legacy', fix: 'Use starter, growth, or enterprise.' },
+];
+
+function visibleDemoIssues(fixed: boolean): DemoIssue[] {
+  return fixed ? demoIssues.slice(1) : demoIssues;
+}
+
+function demoValidationRows(fixed: boolean): string {
+  return visibleDemoIssues(fixed).map(({ row, field, value, fix }) => `
+    <tr><td data-label="Source row">${row}</td><td data-label="Field">${field}</td><td data-label="Value"><code>${value}</code></td><td data-label="What to fix">${fix}</td></tr>
+  `).join('');
+}
+
+const demoSnapshot = () => `
+  <div class="demo-snapshot" aria-label="Sample replay result. Three errors need review.">
     <div class="sample-map"><span>Source email</span><code>Maya.Rivera@Northstar.example</code><span aria-hidden="true">→</span><code>maya.rivera@northstar.example</code></div>
-    <div class="sample-issue ${fixed ? 'sample-issue-fixed' : ''}">
-      <strong>${fixed ? 'Row 5 corrected' : 'Row 5 needs review'}</strong>
-      <span id="demo-error-value">${fixed ? 'samira.chen@atlas.example' : 'email · not-an-email'}</span>
-      <span id="demo-error-message">${fixed ? 'Sample correction applied. Two errors remain.' : 'Enter an email address.'}</span>
+    <div id="demo-sample-issue" class="sample-issue">
+      <strong id="demo-error-title">Row 5 needs review</strong>
+      <span id="demo-error-value">email · not-an-email</span>
+      <span id="demo-error-message">Enter an email address.</span>
     </div>
-    <button id="apply-sample-fix" class="button secondary" type="button" ${fixed ? 'disabled' : ''}>${fixed ? 'Sample email corrected' : 'Fix the sample email'}</button>
+    <button id="apply-sample-fix" class="button secondary" type="button">Fix the sample email</button>
   </div>`;
 
 const header = (active: Route) => `
@@ -171,30 +189,28 @@ $ import-mapping-replay demo</pre></div>
   </main>
   ${footer}`;
 
-const demo = (fixed = false) => `
+const demo = () => `
   <div class="demo-banner" role="status"><span>Demo — sample data, nothing is saved</span><button id="reset-demo" type="button">Reset demo</button><a href="/#install" data-link>Start for real</a></div>
   ${header('/demo')}
   <main id="main" tabindex="-1" class="content-page demo-page">
     <section class="page-hero demo-hero">
       <div class="section-inner">
-        <p class="eyebrow">Five sample customers · three errors</p>
+        <p id="demo-summary-line" class="eyebrow">Five sample customers · three errors</p>
         <h1 id="page-title" tabindex="-1">Review a finished CSV replay</h1>
         <p class="lede">Inspect one mapped value and fix a sample error. Nothing is saved.</p>
-        ${demoSnapshot(fixed)}
+        ${demoSnapshot()}
+        <p id="demo-correction-status" class="demo-correction-status" role="status" aria-atomic="true" tabindex="-1"></p>
       </div>
     </section>
     <section class="section demo-workspace" aria-labelledby="result-title">
       <div class="section-inner">
         <h2 id="result-title" tabindex="-1">The replay needs review</h2>
-        <div class="demo-summary"><div><strong>5</strong><span>source rows</span></div><div><strong>4</strong><span>mapped fields</span></div><div><strong id="demo-error-count">${fixed ? '2' : '3'}</strong><span>errors found</span></div></div>
+        <div class="demo-summary"><div><strong>5</strong><span>source rows</span></div><div><strong>4</strong><span>mapped fields</span></div><div><strong id="demo-error-count">3</strong><span>errors found</span></div></div>
         <div class="section-intro"><h3>Validation results</h3><p>Fix these source values, then run the same mapping again.</p></div>
         <table class="issue-table">
+          <caption id="demo-validation-summary" class="sr-only">Three sample validation errors need review.</caption>
           <thead><tr><th>Source row</th><th>Field</th><th>Value</th><th>What to fix</th></tr></thead>
-          <tbody>
-            <tr><td data-label="Source row">5</td><td data-label="Field">email</td><td data-label="Value"><code>not-an-email</code></td><td data-label="What to fix">Enter an email address.</td></tr>
-            <tr><td data-label="Source row">6</td><td data-label="Field">external_id</td><td data-label="Value"><code>C-1043</code></td><td data-label="What to fix">Use an ID not found on row 3.</td></tr>
-            <tr><td data-label="Source row">6</td><td data-label="Field">plan</td><td data-label="Value"><code>legacy</code></td><td data-label="What to fix">Use starter, growth, or enterprise.</td></tr>
-          </tbody>
+          <tbody id="demo-validation-rows">${demoValidationRows(false)}</tbody>
         </table>
         <div class="section demo-workspace"><h3>Recorded CLI output</h3>${terminal(false)}</div>
       </div>
@@ -365,12 +381,32 @@ function bindPage(): void {
 function setDemoState(fixed: boolean): void {
   if (currentRoute() !== '/demo') return;
   const snapshot = document.querySelector<HTMLElement>('.demo-snapshot');
-  if (snapshot) snapshot.outerHTML = demoSnapshot(fixed);
+  if (snapshot) snapshot.setAttribute('aria-label', fixed ? 'Sample replay result. Two errors remain.' : 'Sample replay result. Three errors need review.');
+  document.querySelector<HTMLElement>('#demo-sample-issue')?.classList.toggle('sample-issue-fixed', fixed);
+  const title = document.querySelector<HTMLElement>('#demo-error-title');
+  if (title) title.textContent = fixed ? 'Row 5 corrected' : 'Row 5 needs review';
+  const value = document.querySelector<HTMLElement>('#demo-error-value');
+  if (value) value.textContent = fixed ? 'samira.chen@atlas.example' : 'email · not-an-email';
+  const message = document.querySelector<HTMLElement>('#demo-error-message');
+  if (message) message.textContent = fixed ? 'Sample correction applied. Two errors remain.' : 'Enter an email address.';
+  const fixAction = document.querySelector<HTMLButtonElement>('#apply-sample-fix');
+  if (fixAction) {
+    fixAction.disabled = fixed;
+    fixAction.textContent = fixed ? 'Sample email corrected' : 'Fix the sample email';
+  }
   const count = document.querySelector<HTMLElement>('#demo-error-count');
   if (count) count.textContent = fixed ? '2' : '3';
-  const output = document.querySelector<HTMLElement>('#terminal-output');
-  if (output) output.innerHTML = sampleTranscript;
-  document.querySelector('#apply-sample-fix')?.addEventListener('click', () => setDemoState(true));
+  const summary = document.querySelector<HTMLElement>('#demo-summary-line');
+  if (summary) summary.textContent = `Five sample customers · ${fixed ? 'two' : 'three'} errors`;
+  const tableRows = document.querySelector<HTMLElement>('#demo-validation-rows');
+  if (tableRows) tableRows.innerHTML = demoValidationRows(fixed);
+  const tableSummary = document.querySelector<HTMLElement>('#demo-validation-summary');
+  if (tableSummary) tableSummary.textContent = fixed ? 'Two sample validation errors remain.' : 'Three sample validation errors need review.';
+  const status = document.querySelector<HTMLElement>('#demo-correction-status');
+  if (status) {
+    status.textContent = fixed ? 'Row 5 corrected. Two validation errors remain.' : 'Sample reset. Three validation errors need review.';
+    if (fixed) status.focus();
+  }
 }
 
 function updateMeta(name: string, content: string): void {

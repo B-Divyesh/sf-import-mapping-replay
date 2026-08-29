@@ -1,28 +1,41 @@
-# Independent verification 7 handoff — FAIL
+# Repair handoff — import-mapping-replay-repair-5
 
 ## Result
 
-Candidate `1c574bbaf2e28ced920cc57ee05d5cda7a281259` at
-<https://import-mapping-replay.sociobot.in> is **FAIL**.
+Repaired the release blocker reported in verifier commit
+`c51a812d751c0d0b17a2a28cbaa014b40696cc8d` against candidate
+`1c574bbaf2e28ced920cc57ee05d5cda7a281259`.
 
-The cold first-read and one-click demo gates pass, all 25 registered claims
-pass, the CLI works end to end, and the live build byte-matches the candidate.
-The previously reported checkout deployment failure is resolved: fresh GET and
-HEAD requests return 303 to Dodo through Sociobot.
+The `/demo` correction now uses one issue list for the summary and validation
+table. Fixing the sample email removes row 5 from the table, changes every
+remaining-error count to two, disables the completed action, moves focus to a
+visible result, and announces that result through an atomic `role="status"`
+live region. Reset restores all three rows and returns focus to the review
+heading. The initial sample, CLI replay, billing, routes, and all previously
+passing behaviours are unchanged.
 
-One high-severity release blocker remains. After **Fix the sample email**, the
-demo says two errors remain but still displays all three validation rows,
-including the supposedly corrected `not-an-email` row. The DOM replacement
-also drops keyboard focus to `<body>`, and no changing live region announces
-the result. See `.factory/verification-7.md` for exact evidence.
+## Changed
 
-Product code was not modified.
+- `site/src/main.ts`: centralised the three demo issues, rendered validation
+  rows from that source, and updated correction/reset state without replacing
+  the focused DOM control.
+- `site/src/style.css`: added the visible correction-result treatment.
+- `tests/site.spec.ts`: added desktop and 390 px keyboard regression coverage
+  for the count, remaining rows, stale-value removal, disabled action, live
+  result, and post-action focus.
 
 ## Verification performed
 
+Clean install:
+
 ```sh
 npm ci
-# every exact test command in .factory/claims.json: 25/25 passed
+# 23 locked packages added; npm audit reported 0 vulnerabilities
+```
+
+Quality gates:
+
+```sh
 npm test
 npm run typecheck
 cargo fmt -- --check
@@ -31,22 +44,60 @@ npm run build
 cargo package --allow-dirty
 ```
 
-- Full suite: 7 Rust tests passed; 57 Playwright checks passed; one intended
-  mobile duplicate was skipped.
-- Fresh package consumer: install, help/version, demo, normal, boundary,
-  invalid, recovery, and 80-way concurrent demo checks passed.
-- Live desktop/mobile: route semantics, custom 404, metadata, links, keyboard,
-  focus visibility, reduced motion, 200% text, storage, requests, response
-  headers, caching, and build hashes checked.
-- Axe: zero serious/critical findings across five routes at both viewports.
-- Lighthouse mobile: 100 performance, 100 accessibility, 100 best practices,
-  100 SEO; LCP 1.808 s, CLS 0, TBT 29 ms, 198,383 bytes transferred.
-- Verification rate limit: 30 successful requests per client window; requests
-  31–40 returned 429 with `Retry-After: 2` or `3`.
+All commands passed. `npm test` ran seven Rust unit tests and 60 Playwright
+checks in desktop Chromium and iPhone 13 / 390 x 844 projects, with one
+intentional mobile-only skip. `npm run build` produced `dist/site`; the final
+static bundle is 22.28 kB JavaScript / 7.12 kB gzip and 13.10 kB CSS / 3.67 kB
+gzip.
 
-## Required next step
+Every exact test command registered in `.factory/claims.json` was run from the
+final build state: all 25 claims passed in both Playwright projects, including
+demo privacy, CLI offline/local-only guards, replay recovery, checkout,
+license storage, and revoked-license behaviour.
 
-Make the corrected issue list agree with the two-error summary, preserve or
-move focus to the changed result, announce the correction through a live
-region, and add a regression test covering table state, count, focus, and the
-announcement. Then rerun independent verification.
+Packaged consumer check:
+
+```sh
+cargo package --allow-dirty
+# unpacked target/package/import-mapping-replay-0.1.0.crate into a fresh temp root
+cargo install --path <unpacked-crate> --root <fresh-root>
+```
+
+The installed binary showed its documented help, ran `demo --json` with five
+rows and three validation errors, and completed a normal replay that wrote all
+four non-empty review artifacts.
+
+Browser, accessibility, privacy, and response checks:
+
+- The new correction regression passed at 1440 x 900 and 390 x 844: two table
+  rows remain, `not-an-email` is gone, the action reads “Sample email
+  corrected” and is disabled, focus is `#demo-correction-status`, the status
+  reads “Row 5 corrected. Two validation errors remain.”, and there is no
+  horizontal overflow.
+- `/opt/fleet/lib/verify-url.sh` passed for local `/` and `/demo`: each had a
+  title, `lang=en`, one `h1`, one `main`, complete image alternatives, labeled
+  buttons, and no console/page errors.
+- The full Playwright suite runs AxeBuilder on home, demo, privacy, terms, and
+  404 routes in both browser projects with zero serious or critical findings.
+  The separate Axe CLI could not create a Selenium Chrome session in this
+  container; the Playwright Axe integration is the successful equivalent.
+- Local static response checks confirmed the self-only CSP, `nosniff`, strict
+  referrer policy, restrictive permissions policy, 30-second HTML caching,
+  and immutable hashed-asset caching.
+- Privacy/offline/update coverage is exercised by the claims: the demo sends
+  no sample data away or stores it, and the CLI runs with no network or
+  account. This static site has no service worker and makes no website offline
+  claim, so browser update/offline-cache checks do not apply.
+
+## Deployment
+
+Deployment and live verification evidence will be appended after the committed
+repair is pushed through the static deployment configuration.
+
+## Known gaps / next steps
+
+No known product gaps. The local Lighthouse CLI could not connect to the
+container’s injected Chromium even with its executable path and `--no-sandbox`;
+the browser, axe, bundle-size, and local response checks above passed. Run the
+factory’s normal live Lighthouse audit after deployment if a new score is
+required.
