@@ -32,7 +32,10 @@ import-mapping-replay run \
   --out-dir replay-output
 ```
 
-Add `--json` for machine-readable command output. A run writes:
+Add `--json` for machine-readable command output. Successful results include
+status, row counts, and review-file paths. Failed commands print
+`{"status":"error","error":"..."}` to standard output and still return a
+nonzero exit code. A successful run writes:
 
 - `output.csv`: rows in the mapping's declared column order.
 - `evidence.json`: source and output hashes plus before/after samples.
@@ -67,7 +70,7 @@ Mappings have a stable integer `version`. Version 1 maps named source columns to
 
 Version 1 transforms are `trim`, `lowercase`, `uppercase`, `replace`, and `date`. Validation rules are `required`, `email`, `one_of`, and `unique`. A field may use `default` when its source cell is empty.
 
-Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Validation failures return exit code 2 after writing review files.
+Missing mapped columns return exit code 1 and say to check the CSV header or mapping. Duplicate CSV headers return exit code 1 before an output directory is created; rename the duplicate headers and run again. Validation failures return exit code 2 after writing review files.
 
 The CLI rejects a source or mapping that resolves to an output artifact. It builds all four artifacts in a staging directory and publishes them only after the full replay succeeds. A malformed later row leaves no partial artifact. If a complete replay already exists, a failed rerun leaves all four prior files unchanged.
 

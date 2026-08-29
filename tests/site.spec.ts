@@ -315,9 +315,12 @@ test('@claim:source-unchanged rejects an output path that resolves to the source
   ], { encoding: 'utf8' });
 
   expect(result.status).toBe(1);
-  expect(result.stderr).toContain('source CSV');
-  expect(result.stderr).toContain('resolves to output artifact');
-  expect(result.stderr).toContain('choose another --out-dir');
+  expect(result.stderr).toBe('');
+  const sourceError = JSON.parse(result.stdout);
+  expect(sourceError.status).toBe('error');
+  expect(sourceError.error).toContain('source CSV');
+  expect(sourceError.error).toContain('resolves to output artifact');
+  expect(sourceError.error).toContain('choose another --out-dir');
   expect(readFileSync(source)).toEqual(before);
   expect(readdirSync(root).sort()).toEqual(['mapping.json', 'output.csv']);
 
@@ -366,6 +369,43 @@ test('@claim:atomic-artifacts malformed later rows publish no partial artifacts 
   for (const [name, expected] of Object.entries(before)) {
     expect(readFileSync(join(output, name))).toEqual(expected);
   }
+});
+
+test('@claim:duplicate-source-headers duplicate CSV headers fail before output is created', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-duplicate-header-'));
+  const source = join(root, 'duplicate.csv');
+  const mapping = join(root, 'mapping.json');
+  const output = join(root, 'out');
+  writeFileSync(source, 'A,A\nfirst,second\n');
+  writeFileSync(mapping, '{"version":1,"fields":[{"target":"chosen","source":"A"}]}');
+
+  const result = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', source, '--mapping', mapping, '--out-dir', output, '--json',
+  ], { encoding: 'utf8' });
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toBe('');
+  expect(JSON.parse(result.stdout)).toMatchObject({
+    status: 'error',
+    error: expect.stringContaining('source CSV header "A" appears more than once'),
+  });
+  expect(existsSync(output)).toBe(false);
+});
+
+test('@claim:json-error-output --json writes a parseable error response for invalid input', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'replay-json-error-'));
+  const missing = join(root, 'does-not-exist.csv');
+  const result = spawnSync(resolve('target/debug/import-mapping-replay'), [
+    'run', '--source', missing, '--mapping', resolve('examples/mapping.json'), '--out-dir', join(root, 'out'), '--json',
+  ], { encoding: 'utf8' });
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toBe('');
+  expect(JSON.parse(result.stdout)).toMatchObject({
+    status: 'error',
+    error: expect.stringContaining('could not read source CSV'),
+  });
+  expect(JSON.parse(result.stdout).error).toContain('check the path');
 });
 
 test('@claim:checkout-redirect buying the kit redirects from Sociobot to Dodo checkout', async () => {

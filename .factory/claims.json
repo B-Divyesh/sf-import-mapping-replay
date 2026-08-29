@@ -91,6 +91,20 @@
     "sandbox": "run the CLI with --json and parse the status, row count, and validation count"
   },
   {
+    "id": "json-error-output",
+    "claim": "The CLI prints a machine-readable JSON error with --json when input cannot be read.",
+    "where": "README",
+    "test": "npm test -- --grep @claim:json-error-output",
+    "sandbox": "run the CLI with a missing source and --json; parse the nonzero error response"
+  },
+  {
+    "id": "duplicate-source-headers",
+    "claim": "The CLI rejects duplicate CSV headers before creating replay output.",
+    "where": "README safety behavior",
+    "test": "npm test -- --grep @claim:duplicate-source-headers",
+    "sandbox": "run a mapping against a CSV with duplicate headers; assert an actionable nonzero error and no output directory"
+  },
+  {
     "id": "actionable-errors",
     "claim": "Invalid input exits non-zero and tells the user what to check.",
     "where": "README",

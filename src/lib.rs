@@ -320,7 +320,6 @@ pub fn run_replay(
             mapping_path.display()
         )
     })?;
-    validate_output_paths(source, mapping_path, out_dir)?;
     let mapping: Mapping = serde_json::from_slice(&mapping_bytes).with_context(|| {
         format!(
             "mapping {} is not valid version 1 JSON",
@@ -338,11 +337,16 @@ pub fn run_replay(
         .iter()
         .map(str::to_owned)
         .collect::<Vec<_>>();
-    let header_index = headers
-        .iter()
-        .enumerate()
-        .map(|(index, name)| (name.as_str(), index))
-        .collect::<HashMap<_, _>>();
+    let mut header_index = HashMap::new();
+    for (index, name) in headers.iter().enumerate() {
+        if let Some(first_index) = header_index.insert(name.as_str(), index) {
+            bail!(
+                "source CSV header {name:?} appears more than once (columns {} and {}); rename duplicate headers and run again",
+                first_index + 1,
+                index + 1
+            );
+        }
+    }
     for field in &mapping.fields {
         if !header_index.contains_key(field.source.as_str()) {
             bail!(
@@ -351,6 +355,7 @@ pub fn run_replay(
             );
         }
     }
+    validate_output_paths(source, mapping_path, out_dir)?;
 
     let mut writer = csv::WriterBuilder::new().from_writer(Vec::new());
     writer.write_record(mapping.fields.iter().map(|field| field.target.as_str()))?;
@@ -604,6 +609,28 @@ mod tests {
             .to_string();
         assert!(error.contains("missing"));
         assert!(error.contains("check the CSV header or mapping"));
+    }
+
+    #[test]
+    fn duplicate_headers_are_rejected_before_artifacts_are_published() {
+        let dir = tempdir().unwrap();
+        let source = dir.path().join("duplicate.csv");
+        let mapping = dir.path().join("mapping.json");
+        let output = dir.path().join("results");
+        fs::write(&source, "A,A\nfirst,second\n").unwrap();
+        fs::write(
+            &mapping,
+            r#"{"version":1,"fields":[{"target":"chosen","source":"A"}]}"#,
+        )
+        .unwrap();
+
+        let error = run_replay(&source, &mapping, &output, 5)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("source CSV header \"A\" appears more than once"));
+        assert!(error.contains("rename duplicate headers and run again"));
+        assert!(!output.exists());
     }
 
     #[test]

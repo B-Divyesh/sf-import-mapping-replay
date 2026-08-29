@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 repair 6 — 2026-08-29
+
+- Reject duplicate source CSV headers before any replay output is created.
+- Return a parseable JSON error response for invalid `--json` commands.
+- Add claim-backed regression coverage for both release blockers.
+
 ## 0.1.0 repair 4 — 2026-08-29
 
 - Reject source or mapping paths that refer to any generated artifact.

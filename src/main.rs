@@ -1,5 +1,5 @@
 use anyhow::{bail, Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{error::ErrorKind, Parser, Subcommand};
 use import_mapping_replay::{run_replay, RunReport};
 use serde::Serialize;
 use std::fs;
@@ -56,6 +56,29 @@ struct CommandResult<'a> {
     rollback_manifest: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     demo_directory: Option<String>,
+}
+
+#[derive(Serialize)]
+struct CommandError {
+    status: &'static str,
+    error: String,
+}
+
+fn json_requested() -> bool {
+    std::env::args_os()
+        .skip(1)
+        .any(|argument| argument.to_str() == Some("--json"))
+}
+
+fn display_json_error(error: impl std::fmt::Display) {
+    let result = CommandError {
+        status: "error",
+        error: error.to_string(),
+    };
+    println!(
+        "{}",
+        serde_json::to_string(&result).expect("serializing the JSON error response cannot fail")
+    );
 }
 
 fn display(report: &RunReport, json: bool, demo_directory: Option<&Path>) -> Result<()> {
@@ -125,17 +148,38 @@ fn create_demo_directory() -> Result<PathBuf> {
 }
 
 fn main() -> ExitCode {
-    match execute() {
+    let json = json_requested();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error)
+            if !json
+                || matches!(
+                    error.kind(),
+                    ErrorKind::DisplayHelp | ErrorKind::DisplayVersion
+                ) =>
+        {
+            error.exit()
+        }
+        Err(error) => {
+            display_json_error(error);
+            return ExitCode::from(2);
+        }
+    };
+    match execute(cli) {
         Ok(code) => code,
         Err(error) => {
-            eprintln!("Error: {error:#}");
+            if json {
+                display_json_error(error);
+            } else {
+                eprintln!("Error: {error:#}");
+            }
             ExitCode::from(1)
         }
     }
 }
 
-fn execute() -> Result<ExitCode> {
-    match Cli::parse().command {
+fn execute(cli: Cli) -> Result<ExitCode> {
+    match cli.command {
         Command::Run {
             source,
             mapping,
